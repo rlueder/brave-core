@@ -9,13 +9,12 @@
 #include <vector>
 
 #include "base/task/single_thread_task_runner.h"
-#include "brave/components/brave_component_updater/browser/dat_file_util.h"
 
 namespace brave_shields {
 
 namespace {
 
-constexpr uint8_t kLocalhostBadfilters[] = R"(
+constexpr unsigned char kLocalhostBadfilters[] = R"(
 ||0.0.0.0^$third-party,domain=~[::]|~[::ffff:0:0],badfilter
 ||[::]^$third-party,domain=~0.0.0.0|~[::ffff:0:0],badfilter
 ||[::ffff:0:0]^$third-party,domain=~0.0.0.0|~[::],badfilter
@@ -24,12 +23,6 @@ constexpr uint8_t kLocalhostBadfilters[] = R"(
 ||[::1]^$third-party,domain=~localhost|~127.0.0.1|~[::ffff:7f00:1],badfilter
 ||[::ffff:7f00:1]^$third-party,domain=~localhost|~127.0.0.1|~[::1],badfilter
 )";
-
-void AddDATBufferToFilterSet(rust::Box<adblock::FilterSet>* filter_set) {
-  (*filter_set)
-      ->add_filter_list(std::vector<uint8_t>(std::begin(kLocalhostBadfilters),
-                                             std::end(kLocalhostBadfilters)));
-}
 
 }  // namespace
 
@@ -45,15 +38,19 @@ std::string AdBlockLocalhostFiltersProvider::GetNameForDebugging() {
   return "AdBlockLocalhostFiltersProvider";
 }
 
-void AdBlockLocalhostFiltersProvider::LoadFilterSet(
-    base::OnceCallback<
-        void(base::OnceCallback<void(rust::Box<adblock::FilterSet>*)>)> cb) {
+void AdBlockLocalhostFiltersProvider::LoadFilters(
+    base::OnceCallback<void(std::vector<unsigned char> filter_buffer,
+                            uint8_t permission_mask)> cb) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
+  std::vector<unsigned char> buffer;
+  buffer.reserve(sizeof(kLocalhostBadfilters) - 1);
+  std::copy_n(kLocalhostBadfilters, sizeof(kLocalhostBadfilters) - 1,
+              std::back_inserter(buffer));
 
   // PostTask so this has an async return to match other loaders
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE,
-      base::BindOnce(std::move(cb), base::BindOnce(&AddDATBufferToFilterSet)));
+      FROM_HERE, base::BindOnce(std::move(cb), buffer, UINT8_MAX));
 }
 
 }  // namespace brave_shields
