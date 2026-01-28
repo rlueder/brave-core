@@ -184,6 +184,7 @@ import org.chromium.components.browser_ui.widget.RadioButtonWithEditText;
 import org.chromium.components.browser_ui.widget.RoundedIconGenerator;
 import org.chromium.components.browser_ui.widget.displaystyle.UiConfig;
 import org.chromium.components.browser_ui.widget.dragreorder.DragReorderableRecyclerViewAdapter;
+import org.chromium.components.browser_ui.widget.dragreorder.DragTouchHandler;
 import org.chromium.components.browser_ui.widget.scrim.ScrimManager;
 import org.chromium.components.browser_ui.widget.selectable_list.SelectableListLayout;
 import org.chromium.components.browser_ui.widget.selectable_list.SelectableListToolbar.SearchDelegate;
@@ -1912,7 +1913,7 @@ public class BytecodeTest {
                         SelectableListLayout.class,
                         SelectionDelegate.class,
                         SearchDelegate.class,
-                        DragReorderableRecyclerViewAdapter.class,
+                        DragTouchHandler.class,
                         boolean.class,
                         OneshotSupplier.class,
                         BookmarkModel.class,
@@ -1954,6 +1955,7 @@ public class BytecodeTest {
                         SelectionDelegate.class,
                         RecyclerView.class,
                         DragReorderableRecyclerViewAdapter.class,
+                        DragTouchHandler.class,
                         boolean.class,
                         SettableNonNullObservableSupplier.class,
                         Profile.class,
