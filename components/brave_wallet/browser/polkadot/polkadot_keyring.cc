@@ -15,6 +15,8 @@
 #include "base/numerics/byte_conversions.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "brave/components/brave_wallet/browser/blockchain_utils.h"
+#include "brave/components/brave_wallet/browser/brave_wallet_utils.h"
 #include "brave/components/brave_wallet/browser/internal/hd_key.h"
 #include "brave/components/brave_wallet/browser/scrypt_utils.h"
 #include "brave/components/brave_wallet/common/common_utils.h"
@@ -116,10 +118,7 @@ std::string PolkadotKeyring::GetAddress(uint32_t account_index,
 
   Ss58Address addr;
   addr.prefix = prefix;
-  base::span(addr.public_key)
-      .copy_from_nonoverlapping(
-          base::span<uint8_t const>(keypair.GetPublicKey()));
-
+  addr.public_key = keypair.GetPublicKey();
   return addr.Encode().value();
 }
 
@@ -150,7 +149,11 @@ HDKeySr25519& PolkadotKeyring::EnsureKeyPair(uint32_t account_index) {
 }
 
 std::optional<std::string> PolkadotKeyring::AddNewHDAccount(uint32_t index) {
-  return GetAddress(index, IsTestnet() ? kWestendPrefix : kPolkadotPrefix);
+  auto addr = GetAddress(index, IsTestnet() ? kWestendPrefix : kPolkadotPrefix);
+  if (IsOfacAddress(addr)) {
+    return std::nullopt;
+  }
+  return addr;
 }
 
 void PolkadotKeyring::SetRandBytesForTesting(  // IN-TEST
