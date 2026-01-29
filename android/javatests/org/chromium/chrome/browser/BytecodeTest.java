@@ -2342,7 +2342,9 @@ public class BytecodeTest {
         Assert.assertTrue(
                 fieldExists(
                         "org/chromium/chrome/browser/toolbar/ToolbarManager",
-                        "mBookmarkModelSupplier"));
+                        "mBookmarkModelSupplier",
+                        true,
+                        NullableObservableSupplier.class));
         Assert.assertTrue(
                 fieldExists(
                         "org/chromium/chrome/browser/toolbar/ToolbarManager", "mLayoutManager"));
