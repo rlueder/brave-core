@@ -1552,7 +1552,7 @@ public class BytecodeTest {
                         Activity.class,
                         NativePageHost.class,
                         Tab.class,
-                        ObservableSupplier.class,
+                        MonotonicObservableSupplier.class,
                         IncognitoNtpMetrics.class));
         Assert.assertTrue(
                 constructorsMatch(
