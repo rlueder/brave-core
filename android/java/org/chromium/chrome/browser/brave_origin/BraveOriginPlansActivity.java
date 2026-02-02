@@ -9,7 +9,6 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.widget.Toolbar;
 
@@ -19,6 +18,8 @@ import org.chromium.base.supplier.OneshotSupplier;
 import org.chromium.base.task.PostTask;
 import org.chromium.base.task.TaskTraits;
 import org.chromium.chrome.R;
+import org.chromium.build.annotations.NullMarked;
+import org.chromium.build.annotations.Nullable;
 import org.chromium.chrome.browser.billing.InAppPurchaseWrapper;
 import org.chromium.chrome.browser.billing.LinkSubscriptionUtils;
 import org.chromium.chrome.browser.init.ActivityProfileProvider;
@@ -38,6 +39,7 @@ import org.chromium.chrome.browser.util.TabUtils;
  * <p>The activity extends AsyncInitializationActivity to ensure proper Chrome initialization before
  * displaying the UI.
  */
+@NullMarked
 public class BraveOriginPlansActivity extends AsyncInitializationActivity {
     private ProgressBar mPurchasePlanProgress;
     private TextView mPurchaseAmountText;
@@ -45,6 +47,26 @@ public class BraveOriginPlansActivity extends AsyncInitializationActivity {
     private TextView mBuyNowButton;
 
     ProductDetails mProductDetails;
+    // Text views for displaying formatted subscription prices
+    private TextView mMonthlySubscriptionAmountText;
+    private TextView mYearlySubscriptionAmountText;
+
+    // Upgrade button for initiating subscription purchase
+    private TextView mUpgradeButton;
+    private TextView mYearlyText;
+    private TextView mRemovedValueText;
+
+    // Currently selected subscription plan (defaults to yearly for better value)
+    private InAppPurchaseWrapper.SubscriptionType mCurrentSelectedPlan =
+            InAppPurchaseWrapper.SubscriptionType.YEARLY;
+
+    // Layout containers for subscription plan selection
+    private LinearLayout mMonthlySelectorLayout;
+    private LinearLayout mYearlySelectorLayout;
+
+    // Google Play Billing product details for each subscription type
+    @Nullable ProductDetails mMonthlyProductDetails;
+    @Nullable ProductDetails mYearlyProductDetails;
 
     @Override
     public boolean shouldStartGpuProcess() {
@@ -147,7 +169,6 @@ public class BraveOriginPlansActivity extends AsyncInitializationActivity {
                 });
     }
 
-    @NonNull
     @Override
     protected OneshotSupplier<ProfileProvider> createProfileProvider() {
         return new ActivityProfileProvider(getLifecycleDispatcher());

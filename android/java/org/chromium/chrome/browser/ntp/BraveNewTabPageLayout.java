@@ -34,7 +34,6 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.RecyclerView.OnItemTouchListener;
@@ -57,6 +56,8 @@ import org.chromium.brave_news.mojom.Feed;
 import org.chromium.brave_news.mojom.FeedItem;
 import org.chromium.brave_news.mojom.FeedPage;
 import org.chromium.brave_news.mojom.FeedPageItem;
+import org.chromium.build.annotations.NullMarked;
+import org.chromium.build.annotations.Nullable;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.brave_news.BraveNewsControllerFactory;
@@ -114,6 +115,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
 @SuppressWarnings("UseSharedPreferencesManagerFromChromeCheck")
+@NullMarked
 public class BraveNewTabPageLayout extends NewTabPageLayout
         implements ConnectionErrorHandler, OnBraveNtpListener {
     private static final String TAG = "BraveNewTabPage";
@@ -132,7 +134,7 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
     private WindowAndroid mWindowAndroid;
 
     private ImageView mBgImageView;
-    private SponsoredRichMediaWebView mSponsoredRichMediaWebView;
+    private @Nullable SponsoredRichMediaWebView mSponsoredRichMediaWebView;
     private FrameLayout mBackgroundSponsoredRichMediaView;
 
     // To be removed in bytecode, parent variable will be used instead.
@@ -141,11 +143,11 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
 
     private BitmapDrawable mImageDrawable;
 
-    private FetchWallpaperWorkerTask mWorkerTask;
+    private @Nullable FetchWallpaperWorkerTask mWorkerTask;
     private boolean mIsFromBottomSheet;
     // Whether to show sponsored image on NTP based on experiment variant
     private boolean mShouldShowSponsoredImage;
-    private NTPBackgroundImagesBridge mNTPBackgroundImagesBridge;
+    private @Nullable NTPBackgroundImagesBridge mNTPBackgroundImagesBridge;
     private ViewGroup mMainLayout;
     private final DatabaseHelper mDatabaseHelper;
 
@@ -169,7 +171,7 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
     private ProgressBar mNewContentProgressBar;
 
     private NTPImage mNtpImageGlobal;
-    private BraveNewsController mBraveNewsController;
+    private @Nullable BraveNewsController mBraveNewsController;
 
     private long mStartCardViewTime;
     private long mEndCardViewTime;
@@ -182,13 +184,13 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
     private int mNewsSessionCardViews;
     private FeedItemsCard mVisibleCard;
     private String mFeedHash;
-    private SharedPreferences.OnSharedPreferenceChangeListener mPreferenceListener;
+    private @Nullable SharedPreferences.OnSharedPreferenceChangeListener mPreferenceListener;
     private boolean mIsTopSitesEnabled;
     private boolean mIsBraveStatsEnabled;
     private boolean mIsDisplayNewsFeed;
     private boolean mIsDisplayNewsOptin;
     private long mNewsFeedLastViewTime;
-    private ViewTreeObserver.OnGlobalLayoutListener mBgImageViewOnGlobalLayoutListener;
+    private @Nullable ViewTreeObserver.OnGlobalLayoutListener mBgImageViewOnGlobalLayoutListener;
 
     private static final int SHOW_BRAVE_RATE_ENTRY_AT = 10; // 10th row
 
@@ -452,7 +454,7 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
                 new RecyclerView.OnScrollListener() {
                     @Override
                     public void onScrollStateChanged(
-                            @NonNull RecyclerView recyclerView, int newState) {
+                            RecyclerView recyclerView, int newState) {
                         super.onScrollStateChanged(recyclerView, newState);
 
                         int firstVisibleItemPosition =
@@ -719,7 +721,7 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
                     }
 
                     @Override
-                    public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
                         super.onScrolled(recyclerView, dx, dy);
 
                         if (mIsDisplayNewsFeed) {
@@ -1256,7 +1258,7 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
                 .getBoolean(BravePref.NEW_TAB_PAGE_SHOW_BACKGROUND_IMAGE);
     }
 
-    public void setTabProvider(Supplier<Tab> unused_tabProvider) {}
+    public void setTabProvider(Supplier<@Nullable Tab> unused_tabProvider) {}
 
     private void showNTPImage(NTPImage ntpImage) {
         Display display = mActivity.getWindowManager().getDefaultDisplay();
@@ -1434,7 +1436,7 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
                 });
     }
 
-    private void initBraveNewsController(final Runnable action) {
+    private void initBraveNewsController(final @Nullable Runnable action) {
         ThreadUtils.assertOnUiThread();
         if (mBraveNewsController != null) {
             if (action != null) {

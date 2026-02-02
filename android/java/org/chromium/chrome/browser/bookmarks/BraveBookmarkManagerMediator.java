@@ -24,6 +24,8 @@ import org.chromium.base.PathUtils;
 import org.chromium.base.supplier.SettableNonNullObservableSupplier;
 import org.chromium.base.task.PostTask;
 import org.chromium.base.task.TaskTraits;
+import org.chromium.build.annotations.NullMarked;
+import org.chromium.build.annotations.Nullable;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.price_tracking.PriceDropNotificationManager;
 import org.chromium.chrome.browser.profiles.Profile;
@@ -45,6 +47,7 @@ import java.io.InputStream;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
+@NullMarked
 class BraveBookmarkManagerMediator extends BookmarkManagerMediator
         implements BraveBookmarkDelegate {
     private ActivityWindowAndroid mWindowAndroid;
@@ -145,7 +148,7 @@ class BraveBookmarkManagerMediator extends BookmarkManagerMediator
                         mContext.getResources().getString(R.string.import_bookmarks_select_file)),
                 new WindowAndroid.IntentCallback() {
                     @Override
-                    public void onIntentCompleted(int resultCode, Intent results) {
+                    public void onIntentCompleted(int resultCode, @Nullable Intent results) {
                         if (resultCode == Activity.RESULT_OK
                                 && results != null
                                 && results.getData() != null) {
