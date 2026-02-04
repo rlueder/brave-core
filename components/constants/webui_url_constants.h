@@ -65,6 +65,8 @@ inline constexpr char kUntrustedMarketURL[] =
 inline constexpr char kUntrustedTrezorHost[] = "trezor-bridge";
 inline constexpr char kUntrustedTrezorURL[] =
     "chrome-untrusted://trezor-bridge/";
+inline constexpr char kLocalAIInternalsHost[] = "local-ai-internals";
+inline constexpr char kLocalAIInternalsURL[] = "chrome://local-ai-internals/";
 inline constexpr char kUntrustedOnDeviceModelWorkerHost[] =
     "on-device-model-worker";
 inline constexpr char kUntrustedOnDeviceModelWorkerURL[] =
