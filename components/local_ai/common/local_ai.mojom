@@ -5,6 +5,17 @@
 
 module local_ai.mojom;
 
+import "mojo/public/mojom/base/big_buffer.mojom";
+import "mojo/public/mojom/base/file_path.mojom";
+
+struct ModelFiles {
+  mojo_base.mojom.BigBuffer weights;
+  mojo_base.mojom.BigBuffer weights_dense1;
+  mojo_base.mojom.BigBuffer weights_dense2;
+  mojo_base.mojom.BigBuffer tokenizer;
+  mojo_base.mojom.BigBuffer config;
+};
+
 // Browser-side service that manages on-device ML model lifecycle and
 // dispatches inference requests. Implemented by LocalAIService in the
 // browser process; called by the model worker page in the renderer.
@@ -18,10 +29,13 @@ interface LocalAIService {
   GenerateEmbeddings(string text) => (array<double> embedding);
 };
 
-// Renderer-side interface implemented by the model worker page.
-// Performs actual model inference using an ML framework compiled
-// to WebAssembly.
+// Renderer-side interface implemented by the WASM bridge page.
+// Performs actual model inference using the Candle ML framework
+// compiled to WebAssembly.
 interface OnDeviceModelWorker {
+  // Loads model weights and tokenizer into the WASM runtime.
+  Init(ModelFiles model_files) => (bool success);
+
   // Produces a dense embedding vector for the given input text.
   GenerateEmbeddings(string input) => (array<double> output);
 };

@@ -35,6 +35,7 @@ static_library("browser") {
       "//brave/components/local_ai/common:mojom",
       "//components/keyed_service/core",
       "//content/public/browser",
+      "//mojo/public/cpp/base",
       "//mojo/public/cpp/bindings",
       "//ui/base",
     ]

@@ -23,4 +23,6 @@ mojom_component("mojom") {
   webui_module_path = "/"
 
   sources = [ "local_ai.mojom" ]
+
+  deps = [ "//mojo/public/mojom/base" ]
 }

@@ -10,10 +10,12 @@
 #include <string>
 #include <vector>
 
+#include "base/files/file_path.h"
 #include "base/functional/callback.h"
 #include "base/memory/weak_ptr.h"
 #include "base/timer/timer.h"
 #include "brave/components/local_ai/browser/background_web_contents.h"
+#include "brave/components/local_ai/browser/local_models_updater.h"
 #include "brave/components/local_ai/common/local_ai.mojom.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
@@ -36,7 +38,8 @@ namespace local_ai {
 // - Automatic cleanup after idle timeout to free memory
 class LocalAIService : public KeyedService,
                        public mojom::LocalAIService,
-                       public BackgroundWebContents::Delegate {
+                       public BackgroundWebContents::Delegate,
+                       public LocalModelsUpdaterState::Observer {
  public:
   using WebContentsTagCallback =
       base::RepeatingCallback<void(content::WebContents*)>;
@@ -61,6 +64,9 @@ class LocalAIService : public KeyedService,
                           GenerateEmbeddingsCallback callback) override;
 
  private:
+  // LocalModelsUpdaterState::Observer:
+  void OnLocalModelsReady(const base::FilePath& install_dir) override;
+
   // KeyedService:
   void Shutdown() override;
 
@@ -68,6 +74,10 @@ class LocalAIService : public KeyedService,
   void OnBackgroundContentsReady() override;
   void OnBackgroundContentsDestroyed() override;
 
+  void LoadModelFiles();
+  void OnModelFilesLoaded(mojom::ModelFilesPtr model_files);
+  void OnModelInitialized(bool success);
+  void RetryLoadModel();
   void EnsureBackgroundContents();
   void CloseBackgroundContents();
 
@@ -80,6 +90,16 @@ class LocalAIService : public KeyedService,
 
   // Single model worker remote (shared by all callers)
   mojo::Remote<mojom::OnDeviceModelWorker> model_worker_remote_;
+
+  // Model loading state
+  base::FilePath pending_model_path_;
+  int model_load_retry_count_ = 0;
+  static constexpr int kMaxModelLoadRetries = 10;
+
+  // Track readiness conditions
+  bool wasm_page_loaded_ = false;
+  bool models_ready_ = false;
+  bool model_initialized_ = false;
 
   // Holds a GenerateEmbeddings() call that arrived before the model was
   // ready. Requests are drained in FIFO order once the model is
@@ -96,6 +116,7 @@ class LocalAIService : public KeyedService,
   };
   std::vector<PendingRequest> pending_requests_;
 
+  void TryLoadModel();
   void ProcessPendingRequests();
   void ForwardRequest(const std::string& text,
                       GenerateEmbeddingsCallback callback);
