@@ -14,6 +14,10 @@ mojom_component("mojom") {
   webui_module_path = "/"
 
   sources = [ "local_ai.mojom" ]
+
+  public_deps = [
+    "//mojo/public/mojom/base",
+  ]
 }
 
 static_library("core") {
@@ -40,6 +44,7 @@ static_library("core") {
     "//components/keyed_service/core",
     "//components/update_client",
     "//crypto",
+    "//mojo/public/cpp/base",
     "//mojo/public/cpp/bindings",
   ]
 }
