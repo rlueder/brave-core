@@ -14,20 +14,28 @@ static_library("browser") {
   deps = [
     "//brave/components/brave_component_updater/browser:public",
     "//brave/components/local_ai/common",
+    "//brave/components/resources:strings_grit",
     "//components/component_updater",
     "//components/component_updater:component_updater_paths",
     "//components/update_client",
     "//crypto",
   ]
 
+  # Desktop (non-iOS) implementation adds CandleService
   if (!is_ios) {
     sources += [
       "background_web_contents.cc",
       "background_web_contents.h",
+      "candle_service.cc",
+      "candle_service.h",
     ]
 
     deps += [
+      "//brave/components/constants",
+      "//brave/components/local_ai/common:mojom",
+      "//components/keyed_service/core",
       "//content/public/browser",
+      "//mojo/public/cpp/bindings",
       "//ui/base",
     ]
   }
