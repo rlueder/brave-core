@@ -5,10 +5,10 @@
 
 import {
   LocalAIService,
-  EmbeddingGemmaInterfaceReceiver,
+  OnDeviceModelWorkerReceiver,
 } from 'gen/brave/components/local_ai/common/local_ai.mojom.m.js'
 
-console.log('[Candle WASM] Embedding Gemma Script loaded')
+console.log('[Candle WASM] On-device model worker script loaded')
 
 console.log('[Candle WASM] Initializing Mojo connection...')
 
@@ -17,17 +17,20 @@ const localAIService = LocalAIService.getRemote()
 
 console.log('[Candle WASM] LocalAIService remote obtained:', localAIService)
 
-// Implement the EmbeddingGemmaInterface Mojo observer
-class EmbeddingGemmaInterfaceImpl {
-  receiver: EmbeddingGemmaInterfaceReceiver
+// Implement the OnDeviceModelWorker Mojo interface
+class OnDeviceModelWorkerImpl {
+  receiver: OnDeviceModelWorkerReceiver
 
   constructor() {
-    this.receiver = new EmbeddingGemmaInterfaceReceiver(this)
+    this.receiver = new OnDeviceModelWorkerReceiver(this)
   }
 
-  // Implementation of EmbeddingGemmaInterface::Embed
-  async embed(input: string): Promise<{ output: number[] }> {
-    console.log('[Candle WASM] Embed called (model not loaded yet):', input)
+  // Implementation of OnDeviceModelWorker::GenerateEmbeddings
+  async generateEmbeddings(input: string): Promise<{ output: number[] }> {
+    console.log(
+      '[Candle WASM] GenerateEmbeddings called' + ' (model not loaded yet):',
+      input,
+    )
     // Model loading will be added in branch 3
     return { output: [] }
   }
@@ -37,14 +40,12 @@ class EmbeddingGemmaInterfaceImpl {
   }
 }
 
-// Create and register the EmbeddingGemmaInterface implementation
+// Create and register the OnDeviceModelWorker implementation
+console.log('[Candle WASM] Creating OnDeviceModelWorker implementation...')
+const modelWorkerImpl = new OnDeviceModelWorkerImpl()
 console.log(
-  '[Candle WASM] Creating EmbeddingGemmaInterface ' + 'implementation...',
+  '[Candle WASM] Registering OnDeviceModelWorker' + ' with LocalAIService...',
 )
-const embeddingGemmaImpl = new EmbeddingGemmaInterfaceImpl()
-console.log(
-  '[Candle WASM] Binding EmbeddingGemmaInterface ' + 'to LocalAIService...',
-)
-localAIService.bindEmbeddingGemma(embeddingGemmaImpl.getPendingRemote())
+localAIService.registerOnDeviceModelWorker(modelWorkerImpl.getPendingRemote())
 
-console.log('[Candle WASM] Embedding Gemma WASM bridge initialized!')
+console.log('[Candle WASM] On-device model worker bridge initialized!')
