@@ -5,16 +5,18 @@
 
 source_set("local_ai") {
   sources = [
-    "candle_service_factory.cc",
-    "candle_service_factory.h",
+    "local_ai_service_factory.cc",
+    "local_ai_service_factory.h",
   ]
 
   deps = [
     "//base",
+    "//brave/components/local_ai/core:mojom",
     "//brave/components/local_ai/content",
     "//chrome/browser/profiles",
     "//components/keyed_service/content",
     "//components/keyed_service/core",
     "//content/public/browser",
+    "//mojo/public/cpp/bindings",
   ]
 }
