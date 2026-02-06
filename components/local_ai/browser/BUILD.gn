@@ -26,8 +26,8 @@ static_library("browser") {
     sources += [
       "background_web_contents.cc",
       "background_web_contents.h",
-      "candle_service.cc",
-      "candle_service.h",
+      "local_ai_service.cc",
+      "local_ai_service.h",
     ]
 
     deps += [
