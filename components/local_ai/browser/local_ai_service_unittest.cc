@@ -8,12 +8,14 @@
 #include <string>
 #include <vector>
 
+#include "base/files/file_util.h"
+#include "base/files/scoped_temp_dir.h"
 #include "base/test/test_future.h"
+#include "brave/components/local_ai/browser/local_models_updater.h"
 #include "brave/components/local_ai/common/local_ai.mojom.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "content/public/test/test_renderer_host.h"
 #include "mojo/public/cpp/bindings/receiver.h"
-#include "mojo/public/cpp/bindings/remote.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace local_ai {
@@ -26,9 +28,15 @@ std::vector<double> TestEmbedding() {
   return {std::begin(kTestEmbeddingData), std::end(kTestEmbeddingData)};
 }
 
-// Fake model worker that returns a fixed embedding vector.
+// Fake model worker that accepts Init() and returns a fixed
+// embedding vector from GenerateEmbeddings().
 class FakeModelWorker : public mojom::OnDeviceModelWorker {
  public:
+  void Init(mojom::ModelFilesPtr model_files, InitCallback callback) override {
+    init_count_++;
+    std::move(callback).Run(init_success_);
+  }
+
   void GenerateEmbeddings(const std::string& input,
                           GenerateEmbeddingsCallback callback) override {
     embed_count_++;
@@ -41,9 +49,13 @@ class FakeModelWorker : public mojom::OnDeviceModelWorker {
 
   void Reset() { receiver_.reset(); }
 
+  void set_init_success(bool success) { init_success_ = success; }
+  int init_count() const { return init_count_; }
   int embed_count() const { return embed_count_; }
 
  private:
+  bool init_success_ = true;
+  int init_count_ = 0;
   int embed_count_ = 0;
   mojo::Receiver<mojom::OnDeviceModelWorker> receiver_{this};
 };
@@ -65,6 +77,8 @@ class LocalAIServiceTest : public content::RenderViewHostTestHarness {
   void TearDown() override {
     static_cast<KeyedService*>(service_.get())->Shutdown();
     service_.reset();
+    // Clear the singleton state for test isolation.
+    LocalModelsUpdaterState::GetInstance()->SetInstallDir(base::FilePath());
     content::RenderViewHostTestHarness::TearDown();
   }
 
@@ -74,14 +88,69 @@ class LocalAIServiceTest : public content::RenderViewHostTestHarness {
         fake_model_worker_.BindNewPipeAndPassRemote());
   }
 
-  // Access BackgroundWebContents::Delegate methods through the
-  // public base class interface.
+  // Set up dummy model files on disk and notify the updater state.
+  void SetUpModelFiles() {
+    ASSERT_TRUE(temp_dir_.CreateUniqueTempDir());
+    base::FilePath dir = temp_dir_.GetPath();
+    base::FilePath model_dir = dir.AppendASCII(kEmbeddingGemmaModelDir);
+    ASSERT_TRUE(base::CreateDirectory(model_dir));
+    ASSERT_TRUE(
+        base::CreateDirectory(model_dir.AppendASCII(kEmbeddingGemmaDense1Dir)));
+    ASSERT_TRUE(
+        base::CreateDirectory(model_dir.AppendASCII(kEmbeddingGemmaDense2Dir)));
+
+    // Create dummy model files matching expected paths.
+    ASSERT_TRUE(
+        base::WriteFile(model_dir.AppendASCII(kEmbeddingGemmaModelFile), "w"));
+    ASSERT_TRUE(base::WriteFile(model_dir.AppendASCII(kEmbeddingGemmaDense1Dir)
+                                    .AppendASCII(kEmbeddingGemmaDenseModelFile),
+                                "d1"));
+    ASSERT_TRUE(base::WriteFile(model_dir.AppendASCII(kEmbeddingGemmaDense2Dir)
+                                    .AppendASCII(kEmbeddingGemmaDenseModelFile),
+                                "d2"));
+    ASSERT_TRUE(base::WriteFile(
+        model_dir.AppendASCII(kEmbeddingGemmaTokenizerFile), "t"));
+    ASSERT_TRUE(
+        base::WriteFile(model_dir.AppendASCII(kEmbeddingGemmaConfigFile), "c"));
+
+    // This fires OnLocalModelsReady on the service.
+    LocalModelsUpdaterState::GetInstance()->SetInstallDir(dir);
+  }
+
+  // Simulate all three readiness conditions being met:
+  // 1. WASM page loaded (OnBackgroundContentsReady)
+  // 2. Component ready (OnLocalModelsReady via SetInstallDir)
+  // 3. Mojo remote bound (RegisterOnDeviceModelWorker)
+  // After these, TryLoadModel() will trigger Init() on the fake.
+  void MakeFullyReady() {
+    // Trigger GenerateEmbeddings to create BackgroundWebContents.
+    base::test::TestFuture<const std::vector<double>&> discard;
+    service_->GenerateEmbeddings("warmup", discard.GetCallback());
+
+    // 1. WASM loaded.
+    delegate()->OnBackgroundContentsReady();
+    // 2. Component ready (sets up files + notifies).
+    SetUpModelFiles();
+    // 3. Bind the mojo remote (triggers TryLoadModel).
+    BindFakeModelWorker();
+
+    // TestFuture::Wait() runs a RunLoop until the callback fires,
+    // which covers the thread-pool hop for LoadModelFiles and the
+    // mojo round-trip through Init() → ProcessPendingRequests.
+    ASSERT_TRUE(discard.Wait());
+  }
+
   BackgroundWebContents::Delegate* delegate() {
     return static_cast<BackgroundWebContents::Delegate*>(service_.get());
   }
 
+  LocalModelsUpdaterState::Observer* observer() {
+    return static_cast<LocalModelsUpdaterState::Observer*>(service_.get());
+  }
+
   std::unique_ptr<LocalAIService> service_;
   FakeModelWorker fake_model_worker_;
+  base::ScopedTempDir temp_dir_;
 };
 
 TEST_F(LocalAIServiceTest, GenerateEmbeddingsCreatesBackgroundContents) {
@@ -100,36 +169,8 @@ TEST_F(LocalAIServiceTest, GenerateEmbeddingsQueuesWhenNotReady) {
   service_->GenerateEmbeddings("hello", future1.GetCallback());
   service_->GenerateEmbeddings("world", future2.GetCallback());
 
-  // Both should be queued, not resolved.
   EXPECT_FALSE(future1.IsReady());
   EXPECT_FALSE(future2.IsReady());
-}
-
-TEST_F(LocalAIServiceTest, RegisterModelWorkerProcessesPendingRequests) {
-  base::test::TestFuture<const std::vector<double>&> future1;
-  base::test::TestFuture<const std::vector<double>&> future2;
-
-  service_->GenerateEmbeddings("hello", future1.GetCallback());
-  service_->GenerateEmbeddings("world", future2.GetCallback());
-
-  BindFakeModelWorker();
-
-  EXPECT_EQ(TestEmbedding(), future1.Get());
-  EXPECT_EQ(TestEmbedding(), future2.Get());
-  EXPECT_EQ(2, fake_model_worker_.embed_count());
-}
-
-TEST_F(LocalAIServiceTest, GenerateEmbeddingsForwardsDirectlyWhenReady) {
-  BindFakeModelWorker();
-
-  // Now that we're ready, GenerateEmbeddings should go directly to
-  // the remote.
-  service_->GenerateEmbeddings("test", base::DoNothing());
-
-  base::test::TestFuture<const std::vector<double>&> future;
-  service_->GenerateEmbeddings("direct", future.GetCallback());
-
-  EXPECT_EQ(TestEmbedding(), future.Get());
 }
 
 TEST_F(LocalAIServiceTest, ShutdownFailsPendingRequests) {
@@ -138,7 +179,6 @@ TEST_F(LocalAIServiceTest, ShutdownFailsPendingRequests) {
 
   static_cast<KeyedService*>(service_.get())->Shutdown();
 
-  // Pending request should be resolved with empty vector.
   EXPECT_EQ(std::vector<double>{}, future.Get());
 }
 
@@ -152,12 +192,10 @@ TEST_F(LocalAIServiceTest, OnBackgroundContentsDestroyedFailsPending) {
 }
 
 TEST_F(LocalAIServiceTest, ReinitializesAfterDestroyed) {
-  BindFakeModelWorker();
+  MakeFullyReady();
 
   delegate()->OnBackgroundContentsDestroyed();
 
-  // A new GenerateEmbeddings() call should queue (not crash) since
-  // state was reset.
   base::test::TestFuture<const std::vector<double>&> future;
   service_->GenerateEmbeddings("after-crash", future.GetCallback());
 
@@ -165,7 +203,7 @@ TEST_F(LocalAIServiceTest, ReinitializesAfterDestroyed) {
 }
 
 TEST_F(LocalAIServiceTest, CloseTimeoutClosesWebContents) {
-  BindFakeModelWorker();
+  MakeFullyReady();
 
   // Generate embeddings — starts the idle timer after forwarding.
   base::test::TestFuture<const std::vector<double>&> future;
@@ -184,7 +222,7 @@ TEST_F(LocalAIServiceTest, CloseTimeoutClosesWebContents) {
 }
 
 TEST_F(LocalAIServiceTest, GenerateEmbeddingsResetsCloseTimeout) {
-  BindFakeModelWorker();
+  MakeFullyReady();
 
   // First request starts the idle timer.
   base::test::TestFuture<const std::vector<double>&> future1;
@@ -246,6 +284,79 @@ TEST_F(LocalAIServiceTest, DoubleShutdownIsIdempotent) {
   keyed_service->Shutdown();
 
   EXPECT_EQ(std::vector<double>{}, future.Get());
+}
+
+TEST_F(LocalAIServiceTest, TryLoadModelWaitsForAllThreeConditions) {
+  // Queue a request.
+  base::test::TestFuture<const std::vector<double>&> future;
+  service_->GenerateEmbeddings("test", future.GetCallback());
+
+  // Only WASM loaded - not enough.
+  delegate()->OnBackgroundContentsReady();
+  EXPECT_FALSE(future.IsReady());
+
+  // WASM + component - still not enough (no mojo remote).
+  SetUpModelFiles();
+  EXPECT_FALSE(future.IsReady());
+
+  // All three - now Init() + GenerateEmbeddings() should complete.
+  BindFakeModelWorker();
+  EXPECT_EQ(TestEmbedding(), future.Get());
+  EXPECT_EQ(1, fake_model_worker_.init_count());
+}
+
+TEST_F(LocalAIServiceTest, TryLoadModelDoesNotLoadIfAlreadyInitialized) {
+  MakeFullyReady();
+
+  delegate()->OnBackgroundContentsReady();
+  EXPECT_EQ(1, fake_model_worker_.init_count());
+}
+
+TEST_F(LocalAIServiceTest, FullReadinessProcessesPendingRequests) {
+  base::test::TestFuture<const std::vector<double>&> future1;
+  base::test::TestFuture<const std::vector<double>&> future2;
+
+  service_->GenerateEmbeddings("hello", future1.GetCallback());
+  service_->GenerateEmbeddings("world", future2.GetCallback());
+
+  MakeFullyReady();
+
+  EXPECT_EQ(TestEmbedding(), future1.Get());
+  EXPECT_EQ(TestEmbedding(), future2.Get());
+}
+
+TEST_F(LocalAIServiceTest, GenerateEmbeddingsForwardsDirectlyWhenReady) {
+  MakeFullyReady();
+
+  base::test::TestFuture<const std::vector<double>&> future;
+  service_->GenerateEmbeddings("direct", future.GetCallback());
+
+  EXPECT_EQ(TestEmbedding(), future.Get());
+}
+
+TEST_F(LocalAIServiceTest, RegisterModelWorkerAloneIsNotReady) {
+  base::test::TestFuture<const std::vector<double>&> future;
+  service_->GenerateEmbeddings("test", future.GetCallback());
+
+  BindFakeModelWorker();
+
+  EXPECT_FALSE(future.IsReady());
+  EXPECT_EQ(0, fake_model_worker_.init_count());
+}
+
+TEST_F(LocalAIServiceTest, ComponentReadyBeforeWasmDoesNotTriggerLoad) {
+  base::test::TestFuture<const std::vector<double>&> future;
+  service_->GenerateEmbeddings("test", future.GetCallback());
+
+  SetUpModelFiles();
+  BindFakeModelWorker();
+
+  EXPECT_FALSE(future.IsReady());
+  EXPECT_EQ(0, fake_model_worker_.init_count());
+
+  delegate()->OnBackgroundContentsReady();
+  EXPECT_EQ(TestEmbedding(), future.Get());
+  EXPECT_EQ(1, fake_model_worker_.init_count());
 }
 
 }  // namespace local_ai
