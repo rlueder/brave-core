@@ -7,9 +7,7 @@
 
 #include "base/logging.h"
 #include "brave/components/constants/webui_url_constants.h"
-#include "content/public/browser/navigation_controller.h"
-#include "content/public/browser/web_contents.h"
-#include "ui/base/page_transition_types.h"
+#include "url/gurl.h"
 
 namespace local_ai {
 
@@ -22,28 +20,6 @@ LocalAIService::PendingEmbedRequest::PendingEmbedRequest(
     PendingEmbedRequest&&) = default;
 LocalAIService::PendingEmbedRequest&
 LocalAIService::PendingEmbedRequest::operator=(PendingEmbedRequest&&) = default;
-
-// WasmWebContentsObserver implementation
-WasmWebContentsObserver::WasmWebContentsObserver(
-    LocalAIService* service,
-    content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents), service_(service) {}
-
-WasmWebContentsObserver::~WasmWebContentsObserver() = default;
-
-void WasmWebContentsObserver::DidFinishLoad(
-    content::RenderFrameHost* render_frame_host,
-    const GURL& validated_url) {
-  DVLOG(3) << "WasmWebContentsObserver: WASM page loaded: " << validated_url;
-  if (service_) {
-    service_->OnWasmPageLoaded();
-  }
-}
-
-namespace {
-// Idle timeout before closing the WASM WebContents to free memory
-constexpr base::TimeDelta kIdleTimeout = base::Minutes(1);
-}  // namespace
 
 // LocalAIService implementation
 LocalAIService::LocalAIService(content::BrowserContext* browser_context)
@@ -77,21 +53,20 @@ void LocalAIService::BindEmbeddingGemma(
   if (embedding_gemma_remote_.is_bound()) {
     DVLOG(1) << "EmbeddingGemma already bound, resetting";
     embedding_gemma_remote_.reset();
-    embedding_ready_ = false;
   }
   embedding_gemma_remote_.Bind(std::move(pending_remote));
 
-  // Set up disconnect handler - this handles renderer crashes,
-  // manual kills, etc.
+  // Set up disconnect handler - this handles mojo pipe disconnections
+  // that may not be renderer crashes (e.g. manual kills)
   embedding_gemma_remote_.set_disconnect_handler(base::BindOnce(
       [](LocalAIService* service) {
-        DVLOG(1) << "EmbeddingGemma remote disconnected "
-                    "(renderer crash or manual kill)";
-        // Clear pending requests on disconnect
-        for (auto& request : service->pending_embed_requests_) {
+        DVLOG(1) << "EmbeddingGemma remote disconnected";
+        // Swap-and-process to guard against re-entrancy
+        std::vector<PendingEmbedRequest> requests;
+        requests.swap(service->pending_embed_requests_);
+        for (auto& request : requests) {
           std::move(request.callback).Run({});
         }
-        service->pending_embed_requests_.clear();
         // Close WebContents and reset state so next Embed() will
         // reinitialize
         service->CloseWasmWebContents();
@@ -100,117 +75,82 @@ void LocalAIService::BindEmbeddingGemma(
 
   DVLOG(3) << "BindEmbeddingGemma: Bound embedder remote";
 
-  // Mark as ready and process pending requests
-  embedding_ready_ = true;
   ProcessPendingEmbedRequests();
 }
 
 void LocalAIService::Embed(const std::string& text, EmbedCallback callback) {
-  // Stop idle timer since we have activity
-  StopIdleTimer();
-
-  // Ensure WebContents exists (may have been closed due to idle)
+  // Ensure WebContents exists
   EnsureWasmWebContents();
 
-  // If remote is not ready yet, queue the request
-  if (!embedding_ready_) {
+  if (!embedding_gemma_remote_.is_bound()) {
     DVLOG(3) << "Embedding not ready yet, queuing embed request";
     pending_embed_requests_.emplace_back(text, std::move(callback));
     return;
   }
 
   embedding_gemma_remote_->Embed(text, std::move(callback));
-
-  // Start idle timer after processing the request
-  StartIdleTimer();
 }
 
-void LocalAIService::OnWasmPageLoaded() {
-  DVLOG(3) << "LocalAIService: WASM page loaded";
-  wasm_page_loaded_ = true;
+void LocalAIService::OnBackgroundContentsReady() {
+  DVLOG(3) << "LocalAIService: Background contents ready";
+}
+
+void LocalAIService::OnBackgroundContentsDestroyed() {
+  DVLOG(1) << "LocalAIService: Background contents destroyed";
+  std::vector<PendingEmbedRequest> requests;
+  requests.swap(pending_embed_requests_);
+  for (auto& request : requests) {
+    std::move(request.callback).Run({});
+  }
+  background_contents_.reset();
+  embedding_gemma_remote_.reset();
 }
 
 void LocalAIService::Shutdown() {
   DVLOG(3) << "LocalAIService: Shutting down";
-
-  // Clear any pending requests
-  for (auto& request : pending_embed_requests_) {
-    std::move(request.callback).Run({});
-  }
-  pending_embed_requests_.clear();
-
   CloseWasmWebContents();
 }
 
 void LocalAIService::ProcessPendingEmbedRequests() {
-  if (!embedding_ready_ || !embedding_gemma_remote_) {
+  if (!embedding_gemma_remote_.is_bound()) {
     return;
   }
 
   DVLOG(3) << "Processing " << pending_embed_requests_.size()
            << " pending embed requests";
 
-  // Process all queued requests
-  for (auto& request : pending_embed_requests_) {
+  // Swap-and-process to guard against re-entrancy
+  std::vector<PendingEmbedRequest> requests;
+  requests.swap(pending_embed_requests_);
+  for (auto& request : requests) {
     embedding_gemma_remote_->Embed(request.text, std::move(request.callback));
   }
-  pending_embed_requests_.clear();
-
-  // Start idle timer after processing requests
-  StartIdleTimer();
 }
 
 void LocalAIService::EnsureWasmWebContents() {
-  if (wasm_web_contents_) {
+  if (background_contents_) {
     return;  // Already created
   }
 
-  DVLOG(3) << "LocalAIService: Creating WASM WebContents";
+  DVLOG(3) << "LocalAIService: Creating BackgroundWebContents";
 
-  // Create a hidden WebContents to load the WASM
-  content::WebContents::CreateParams create_params(browser_context_);
-  create_params.is_never_composited = true;
-  wasm_web_contents_ = content::WebContents::Create(create_params);
-
-  // Create observer for the WebContents to track page load
-  wasm_web_contents_observer_ =
-      std::make_unique<WasmWebContentsObserver>(this, wasm_web_contents_.get());
-
-  // Navigate to the WASM page - this will trigger
-  // BindEmbeddingGemma automatically
   GURL wasm_url(kUntrustedCandleEmbeddingGemmaWasmURL);
   DVLOG(3) << "LocalAIService: Loading WASM from " << wasm_url;
-  wasm_web_contents_->GetController().LoadURL(wasm_url, content::Referrer(),
-                                              ui::PAGE_TRANSITION_AUTO_TOPLEVEL,
-                                              std::string());
+  background_contents_ =
+      std::make_unique<BackgroundWebContents>(browser_context_, wasm_url, this);
 }
 
 void LocalAIService::CloseWasmWebContents() {
-  DVLOG(3) << "LocalAIService: Closing WASM WebContents "
+  DVLOG(3) << "LocalAIService: Closing BackgroundWebContents "
               "to free memory";
 
-  idle_timer_.Stop();
-  wasm_web_contents_observer_.reset();
   embedding_gemma_remote_.reset();
-
-  if (wasm_web_contents_) {
-    wasm_web_contents_->Close();
-    wasm_web_contents_.reset();
+  std::vector<PendingEmbedRequest> requests;
+  requests.swap(pending_embed_requests_);
+  for (auto& request : requests) {
+    std::move(request.callback).Run({});
   }
-
-  // Reset state so we can reinitialize later
-  wasm_page_loaded_ = false;
-  embedding_ready_ = false;
-}
-
-void LocalAIService::StartIdleTimer() {
-  idle_timer_.Start(FROM_HERE, kIdleTimeout,
-                    base::BindOnce(&LocalAIService::CloseWasmWebContents,
-                                   weak_ptr_factory_.GetWeakPtr()));
-}
-
-void LocalAIService::StopIdleTimer() {
-  idle_timer_.Stop();
+  background_contents_.reset();
 }
 
 }  // namespace local_ai
