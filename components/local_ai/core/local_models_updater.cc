@@ -137,10 +137,16 @@ void LocalModelsUpdaterState::RemoveObserver(Observer* observer) {
 }
 
 void LocalModelsUpdaterState::SetInstallDir(const base::FilePath& install_dir) {
+  install_dir_ = install_dir;
   if (install_dir.empty()) {
+    embeddinggemma_model_dir_ = base::FilePath();
+    embeddinggemma_model_path_ = base::FilePath();
+    embeddinggemma_dense1_path_ = base::FilePath();
+    embeddinggemma_dense2_path_ = base::FilePath();
+    embeddinggemma_config_path_ = base::FilePath();
+    embeddinggemma_tokenizer_path_ = base::FilePath();
     return;
   }
-  install_dir_ = install_dir;
   embeddinggemma_model_dir_ = install_dir_.AppendASCII(kEmbeddingGemmaModelDir);
   embeddinggemma_model_path_ =
       embeddinggemma_model_dir_.AppendASCII(kEmbeddingGemmaModelFile);
