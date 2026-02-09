@@ -14,7 +14,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.RecyclerView.OnScrollListener;
@@ -142,6 +141,10 @@ class BraveBookmarkManagerMediator extends BookmarkManagerMediator
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("text/html");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        assertNonNull(mWindowAndroid);
+        assertNonNull(mContext);
+
         if (mWindowAndroid.showIntent(
                 Intent.createChooser(
                         intent,

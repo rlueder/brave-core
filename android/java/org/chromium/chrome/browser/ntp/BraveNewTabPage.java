@@ -18,7 +18,6 @@ import org.chromium.build.annotations.EnsuresNonNull;
 import org.chromium.build.annotations.NullMarked;
 import org.chromium.build.annotations.Nullable;
 import org.chromium.chrome.R;
-import org.chromium.chrome.browser.app.feed.FeedActionDelegateImpl;
 import org.chromium.chrome.browser.browser_controls.BrowserControlsStateProvider;
 import org.chromium.chrome.browser.feed.BraveFeedSurfaceCoordinator;
 import org.chromium.chrome.browser.feed.FeedActionDelegate;
@@ -166,15 +165,16 @@ public class BraveNewTabPage extends NewTabPage {
         mNewTabPageLayout = (NewTabPageLayout) inflater.inflate(R.layout.new_tab_page_layout, null);
 
         // No-op stub to deal with non-null requirement
-        FeedActionDelegate actionDelegate = new FeedActionDelegate() {
+        FeedActionDelegate actionDelegate =
+                new FeedActionDelegate() {
                     @Override
                     public void openSuggestionUrl(
-                        int disposition,
-                        LoadUrlParams params,
-                        boolean inGroup,
-                        int pageId,
-                        PageLoadObserver pageLoadObserver,
-                        Callback<VisitResult> onVisitComplete) {
+                            int disposition,
+                            LoadUrlParams params,
+                            boolean inGroup,
+                            int pageId,
+                            PageLoadObserver pageLoadObserver,
+                            Callback<VisitResult> onVisitComplete) {
                         assert false : "Not supposed to be invoked";
                     }
                 };

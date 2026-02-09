@@ -5,7 +5,6 @@
 
 package org.chromium.chrome.browser.feed;
 
-import static org.chromium.build.NullUtil.assertNonNull;
 
 import android.content.Context;
 import android.widget.FrameLayout;

@@ -138,10 +138,10 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
     private FrameLayout mBackgroundSponsoredRichMediaView;
 
     // To be removed in bytecode, parent variable will be used instead.
-    private Profile mProfile;
-    private SponsoredTab mSponsoredTab;
+    private @Nullable Profile mProfile;
 
-    private BitmapDrawable mImageDrawable;
+    private @Nullable SponsoredTab mSponsoredTab;
+    private @Nullable BitmapDrawable mImageDrawable;
 
     private @Nullable FetchWallpaperWorkerTask mWorkerTask;
     private boolean mIsFromBottomSheet;
@@ -175,16 +175,16 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
 
     private long mStartCardViewTime;
     private long mEndCardViewTime;
-    private String mCreativeInstanceId;
-    private String mUuid;
-    //@TODO alex make an enum
-    private String mCardType;
+    private @Nullable String mCreativeInstanceId;
+    private @Nullable String mUuid;
+    // @TODO alex make an enum
+    private @Nullable String mCardType;
     private int mItemPosition;
     private int mPrevVisibleNewsCardPosition = -1;
     private int mNewsSessionCardViews;
     private FeedItemsCard mVisibleCard;
     private String mFeedHash;
-    private @Nullable SharedPreferences.OnSharedPreferenceChangeListener mPreferenceListener;
+    private SharedPreferences.@Nullable OnSharedPreferenceChangeListener mPreferenceListener;
     private boolean mIsTopSitesEnabled;
     private boolean mIsBraveStatsEnabled;
     private boolean mIsDisplayNewsFeed;
@@ -453,8 +453,7 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
         mRecyclerView.addOnScrollListener(
                 new RecyclerView.OnScrollListener() {
                     @Override
-                    public void onScrollStateChanged(
-                            RecyclerView recyclerView, int newState) {
+                    public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
                         super.onScrollStateChanged(recyclerView, newState);
 
                         int firstVisibleItemPosition =
@@ -1291,8 +1290,10 @@ public class BraveNewTabPageLayout extends NewTabPageLayout
                 && getTab() != null
                 && mNewTabTakeoverInfobar == null) {
             mNewTabTakeoverInfobar = new BraveNewTabTakeoverInfobar(mProfile);
-            mNewTabTakeoverInfobar.maybeDisplayAndIncrementCounter(
-                    mActivity, getTab().getWebContents());
+            if (getTab().getWebContents() != null) {
+                mNewTabTakeoverInfobar.maybeDisplayAndIncrementCounter(
+                        mActivity, getTab().getWebContents());
+            }
         }
     }
 
