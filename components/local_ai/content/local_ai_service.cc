@@ -95,7 +95,8 @@ void LocalAIService::OnBackgroundContentsReady() {
   DVLOG(3) << "LocalAIService: Background contents ready";
 }
 
-void LocalAIService::OnBackgroundContentsDestroyed() {
+void LocalAIService::OnBackgroundContentsDestroyed(
+    BackgroundWebContents::DestroyReason reason) {
   DVLOG(1) << "LocalAIService: Background contents destroyed";
   std::vector<PendingEmbedRequest> requests;
   requests.swap(pending_embed_requests_);

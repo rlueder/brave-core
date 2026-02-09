@@ -7,8 +7,8 @@ static_library("content") {
   sources = [
     "background_web_contents.cc",
     "background_web_contents.h",
-    "candle_service.cc",
-    "candle_service.h",
+    "local_ai_service.cc",
+    "local_ai_service.h",
   ]
 
   public_deps = [ "//base" ]
@@ -27,11 +27,17 @@ static_library("content") {
 
 source_set("unit_tests") {
   testonly = true
-  sources = [ "background_web_contents_unittest.cc" ]
+  sources = [
+    "background_web_contents_unittest.cc",
+    "local_ai_service_unittest.cc",
+  ]
 
   deps = [
     ":content",
+    "//base/test:test_support",
+    "//brave/components/local_ai/common:mojom",
     "//content/test:test_support",
+    "//mojo/public/cpp/bindings",
     "//testing/gmock",
     "//testing/gtest",
     "//url",
