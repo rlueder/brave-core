@@ -8,10 +8,13 @@
 #include <memory>
 #include <utility>
 
+#include "base/functional/bind.h"
 #include "base/no_destructor.h"
 #include "brave/components/local_ai/browser/local_ai_service.h"
+#include "brave/grit/brave_generated_resources.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_selections.h"
+#include "chrome/browser/task_manager/web_contents_tags.h"
 
 namespace local_ai {
 
@@ -59,7 +62,11 @@ LocalAIServiceFactory::~LocalAIServiceFactory() = default;
 std::unique_ptr<KeyedService>
 LocalAIServiceFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
-  return std::make_unique<LocalAIService>(context);
+  return std::make_unique<LocalAIService>(
+      context, base::BindRepeating([](content::WebContents* web_contents) {
+        task_manager::WebContentsTags::CreateForToolContents(
+            web_contents, IDS_LOCAL_AI_TASK_MANAGER_TITLE);
+      }));
 }
 
 }  // namespace local_ai

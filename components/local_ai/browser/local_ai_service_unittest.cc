@@ -54,7 +54,7 @@ class LocalAIServiceTest : public content::RenderViewHostTestHarness {
  protected:
   void SetUp() override {
     content::RenderViewHostTestHarness::SetUp();
-    service_ = std::make_unique<LocalAIService>(browser_context());
+    service_ = std::make_unique<LocalAIService>(browser_context(), base::DoNothing());
   }
 
   void TearDown() override {
