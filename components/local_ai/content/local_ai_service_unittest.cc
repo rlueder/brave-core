@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "base/test/test_future.h"
-#include "brave/components/local_ai/common/local_ai.mojom.h"
+#include "brave/components/local_ai/core/local_ai.mojom.h"
 #include "brave/components/local_ai/content/background_web_contents.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "content/public/test/test_renderer_host.h"
@@ -55,7 +55,7 @@ class LocalAIServiceTest : public content::RenderViewHostTestHarness {
  protected:
   void SetUp() override {
     content::RenderViewHostTestHarness::SetUp();
-    service_ = std::make_unique<LocalAIService>(browser_context());
+    service_ = std::make_unique<LocalAIService>(browser_context(), base::DoNothing());
   }
 
   void TearDown() override {

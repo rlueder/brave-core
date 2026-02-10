@@ -41,7 +41,14 @@ class LocalAIService : public KeyedService,
                        public mojom::LocalAIService,
                        public BackgroundWebContents::Delegate {
  public:
-  explicit LocalAIService(content::BrowserContext* browser_context);
+  using WebContentsTagCallback =
+      base::RepeatingCallback<void(content::WebContents*)>;
+
+  // |web_contents_tag_callback| is called after creating a
+  // BackgroundWebContents to tag it for the task manager. Injected by
+  // the browser layer since task_manager is in chrome/.
+  LocalAIService(content::BrowserContext* browser_context,
+                 WebContentsTagCallback web_contents_tag_callback);
   ~LocalAIService() override;
 
   LocalAIService(const LocalAIService&) = delete;
@@ -91,6 +98,8 @@ class LocalAIService : public KeyedService,
   std::vector<PendingEmbedRequest> pending_embed_requests_;
 
   void ProcessPendingEmbedRequests();
+
+  WebContentsTagCallback web_contents_tag_callback_;
 
   base::WeakPtrFactory<LocalAIService> weak_ptr_factory_{this};
 };

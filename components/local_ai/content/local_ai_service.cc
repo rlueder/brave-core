@@ -22,8 +22,10 @@ LocalAIService::PendingEmbedRequest&
 LocalAIService::PendingEmbedRequest::operator=(PendingEmbedRequest&&) = default;
 
 // LocalAIService implementation
-LocalAIService::LocalAIService(content::BrowserContext* browser_context)
-    : browser_context_(browser_context) {
+LocalAIService::LocalAIService(content::BrowserContext* browser_context,
+                               WebContentsTagCallback web_contents_tag_callback)
+    : browser_context_(browser_context),
+      web_contents_tag_callback_(std::move(web_contents_tag_callback)) {
   DVLOG(3) << "LocalAIService created for browser context";
 
   if (!browser_context_) {
@@ -137,8 +139,8 @@ void LocalAIService::EnsureWasmWebContents() {
 
   GURL wasm_url(kUntrustedCandleEmbeddingGemmaWasmURL);
   DVLOG(3) << "LocalAIService: Loading WASM from " << wasm_url;
-  background_contents_ =
-      std::make_unique<BackgroundWebContents>(browser_context_, wasm_url, this);
+  background_contents_ = std::make_unique<BackgroundWebContents>(
+      browser_context_, wasm_url, this, web_contents_tag_callback_);
 }
 
 void LocalAIService::CloseWasmWebContents() {

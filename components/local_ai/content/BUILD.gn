@@ -35,7 +35,7 @@ source_set("unit_tests") {
   deps = [
     ":content",
     "//base/test:test_support",
-    "//brave/components/local_ai/common:mojom",
+    "//brave/components/local_ai/core:mojom",
     "//content/test:test_support",
     "//mojo/public/cpp/bindings",
     "//testing/gmock",
