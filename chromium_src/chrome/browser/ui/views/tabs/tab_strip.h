@@ -30,10 +30,6 @@ class BraveTabHoverCardController;
   bool ShouldPaintTabAccent(const Tab* tab) const override;                \
   std::optional<SkColor> GetTabAccentColor(const Tab* tab) const override; \
   ui::ImageModel GetTabAccentIcon(const Tab* tab) const override;          \
-  static constexpr bool IsUsingBraveTabHoverCardController() {             \
-    return std::is_same_v<std::unique_ptr<BraveTabHoverCardController>,    \
-                          decltype(TabStrip::hover_card_controller_)>;     \
-  }                                                                        \
   virtual TabDragContext* GetDragContext
 
 #define TabHoverCardController BraveTabHoverCardController
@@ -41,8 +37,5 @@ class BraveTabHoverCardController;
 #undef TabHoverCardController
 #undef GetDragContext
 #undef UpdateHoverCard
-
-static_assert(TabStrip::IsUsingBraveTabHoverCardController(),
-              "Should use BraveTabHoverCardController");
 
 #endif  // BRAVE_CHROMIUM_SRC_CHROME_BROWSER_UI_VIEWS_TABS_TAB_STRIP_H_
