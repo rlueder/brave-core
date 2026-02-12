@@ -7,6 +7,8 @@ source_set("filter_set") {
   sources = [
     "filter_set_service.cc",
     "filter_set_service.h",
+    "filter_set_service_in_process_launcher.cc",
+    "filter_set_service_in_process_launcher.h",
   ]
 
   deps = [

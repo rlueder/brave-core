@@ -21,6 +21,7 @@
 #include "brave/components/brave_shields/content/browser/ad_block_service.h"
 #include "brave/components/brave_shields/content/browser/ad_block_subscription_download_manager.h"
 #include "brave/components/brave_shields/content/test/test_filters_provider.h"
+#include "brave/components/services/brave_shields/filter_set_service_in_process_launcher.h"
 #include "brave/test/base/testing_brave_browser_process.h"
 #include "chrome/browser/net/system_network_context_manager.h"
 #include "chrome/common/chrome_paths.h"
@@ -102,6 +103,7 @@ class BraveAdBlockTPNetworkDelegateHelperTest : public testing::Test {
         brave_component_updater_delegate_->locale(), nullptr,
         brave_component_updater_delegate_->GetTaskRunner(),
         base::BindOnce(&FakeAdBlockSubscriptionDownloadManagerGetter),
+        base::BindRepeating(&brave_shields::LaunchInProcessFilterSetParser),
         user_data_dir);
 
     TestingBraveBrowserProcess::GetGlobal()->SetAdBlockService(

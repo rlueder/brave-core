@@ -40,8 +40,8 @@ void LoadFiltersTuple(
 namespace brave_shields {
 
 AdBlockFiltersProviderManager::AdBlockFiltersProviderManager(
-    mojo::Remote<filter_set::mojom::UtilParseFilterSet> filter_set_service)
-    : filter_set_service_(std::move(filter_set_service)) {}
+    FilterSetServiceFactory filter_set_service_factory)
+    : filter_set_service_(filter_set_service_factory.Run()) {}
 
 AdBlockFiltersProviderManager::~AdBlockFiltersProviderManager() = default;
 

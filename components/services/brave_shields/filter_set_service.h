@@ -8,11 +8,15 @@
 
 #include "brave/components/services/brave_shields/mojom/filter_set.mojom.h"
 #include "mojo/public/cpp/bindings/receiver.h"
+#include "mojo/public/cpp/bindings/remote.h"
 
 namespace brave_shields {
 
 class FilterSetService : public filter_set::mojom::UtilParseFilterSet {
  public:
+  // For binding to an externally owned Receiver, like with
+  // |mojo::MakeSelfOwnedReceiver()|.
+  FilterSetService();
   explicit FilterSetService(
       mojo::PendingReceiver<filter_set::mojom::UtilParseFilterSet> receiver);
   FilterSetService(const FilterSetService&) = delete;
@@ -23,8 +27,11 @@ class FilterSetService : public filter_set::mojom::UtilParseFilterSet {
   void ParseFilters(std::vector<filter_set::mojom::FilterListInputPtr> filters,
                     ParseFiltersCallback callback) override;
 
-  mojo::Receiver<filter_set::mojom::UtilParseFilterSet> receiver_;
+  mojo::Receiver<filter_set::mojom::UtilParseFilterSet> receiver_{this};
 };
+
+using FilterSetServiceFactory = base::RepeatingCallback<
+    mojo::PendingRemote<filter_set::mojom::UtilParseFilterSet>()>;
 
 }  // namespace brave_shields
 

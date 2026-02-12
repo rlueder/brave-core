@@ -9,6 +9,8 @@
 
 namespace brave_shields {
 
+FilterSetService::FilterSetService() = default;
+
 FilterSetService::FilterSetService(
     mojo::PendingReceiver<filter_set::mojom::UtilParseFilterSet> receiver)
     : receiver_(this, std::move(receiver)) {}
