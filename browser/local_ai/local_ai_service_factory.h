@@ -23,7 +23,7 @@ class NoDestructor;
 
 namespace local_ai {
 
-class LocalAIService;
+class LocalAIService;  // core/local_ai_service.h
 
 class LocalAIServiceFactory : public ProfileKeyedServiceFactory {
  public:
