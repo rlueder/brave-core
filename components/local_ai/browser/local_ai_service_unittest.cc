@@ -26,16 +26,16 @@ std::vector<double> TestEmbedding() {
   return {std::begin(kTestEmbeddingData), std::end(kTestEmbeddingData)};
 }
 
-// Fake EmbeddingGemma that returns a fixed embedding vector.
-class FakeEmbeddingGemma : public mojom::EmbeddingGemmaInterface {
+// Fake model worker that returns a fixed embedding vector.
+class FakeModelWorker : public mojom::OnDeviceModelWorker {
  public:
-  void Embed(const std::string& input, EmbedCallback callback) override {
+  void GenerateEmbeddings(const std::string& input,
+                          GenerateEmbeddingsCallback callback) override {
     embed_count_++;
     std::move(callback).Run(TestEmbedding());
   }
 
-  mojo::PendingRemote<mojom::EmbeddingGemmaInterface>
-  BindNewPipeAndPassRemote() {
+  mojo::PendingRemote<mojom::OnDeviceModelWorker> BindNewPipeAndPassRemote() {
     return receiver_.BindNewPipeAndPassRemote();
   }
 
@@ -45,7 +45,7 @@ class FakeEmbeddingGemma : public mojom::EmbeddingGemmaInterface {
 
  private:
   int embed_count_ = 0;
-  mojo::Receiver<mojom::EmbeddingGemmaInterface> receiver_{this};
+  mojo::Receiver<mojom::OnDeviceModelWorker> receiver_{this};
 };
 
 }  // namespace
@@ -54,7 +54,8 @@ class LocalAIServiceTest : public content::RenderViewHostTestHarness {
  protected:
   void SetUp() override {
     content::RenderViewHostTestHarness::SetUp();
-    service_ = std::make_unique<LocalAIService>(browser_context(), base::DoNothing());
+    service_ =
+        std::make_unique<LocalAIService>(browser_context(), base::DoNothing());
   }
 
   void TearDown() override {
@@ -63,10 +64,10 @@ class LocalAIServiceTest : public content::RenderViewHostTestHarness {
     content::RenderViewHostTestHarness::TearDown();
   }
 
-  // Simulate the WASM page binding its EmbeddingGemma interface.
-  void BindFakeEmbeddingGemma() {
-    service_->BindEmbeddingGemma(
-        fake_embedding_gemma_.BindNewPipeAndPassRemote());
+  // Simulate the model worker page registering its interface.
+  void BindFakeModelWorker() {
+    service_->RegisterOnDeviceModelWorker(
+        fake_model_worker_.BindNewPipeAndPassRemote());
   }
 
   // Access BackgroundWebContents::Delegate methods through the
@@ -76,58 +77,60 @@ class LocalAIServiceTest : public content::RenderViewHostTestHarness {
   }
 
   std::unique_ptr<LocalAIService> service_;
-  FakeEmbeddingGemma fake_embedding_gemma_;
+  FakeModelWorker fake_model_worker_;
 };
 
-TEST_F(LocalAIServiceTest, EmbedCreatesBackgroundContents) {
-  // Calling Embed() should lazily create the BackgroundWebContents.
+TEST_F(LocalAIServiceTest, GenerateEmbeddingsCreatesBackgroundContents) {
+  // Calling GenerateEmbeddings() should lazily create the
+  // BackgroundWebContents.
   base::test::TestFuture<const std::vector<double>&> future;
-  service_->Embed("test", future.GetCallback());
+  service_->GenerateEmbeddings("test", future.GetCallback());
 
   EXPECT_FALSE(future.IsReady());
 }
 
-TEST_F(LocalAIServiceTest, EmbedQueuesWhenNotReady) {
+TEST_F(LocalAIServiceTest, GenerateEmbeddingsQueuesWhenNotReady) {
   base::test::TestFuture<const std::vector<double>&> future1;
   base::test::TestFuture<const std::vector<double>&> future2;
 
-  service_->Embed("hello", future1.GetCallback());
-  service_->Embed("world", future2.GetCallback());
+  service_->GenerateEmbeddings("hello", future1.GetCallback());
+  service_->GenerateEmbeddings("world", future2.GetCallback());
 
   // Both should be queued, not resolved.
   EXPECT_FALSE(future1.IsReady());
   EXPECT_FALSE(future2.IsReady());
 }
 
-TEST_F(LocalAIServiceTest, BindEmbeddingGemmaProcessesPendingRequests) {
+TEST_F(LocalAIServiceTest, RegisterModelWorkerProcessesPendingRequests) {
   base::test::TestFuture<const std::vector<double>&> future1;
   base::test::TestFuture<const std::vector<double>&> future2;
 
-  service_->Embed("hello", future1.GetCallback());
-  service_->Embed("world", future2.GetCallback());
+  service_->GenerateEmbeddings("hello", future1.GetCallback());
+  service_->GenerateEmbeddings("world", future2.GetCallback());
 
-  BindFakeEmbeddingGemma();
+  BindFakeModelWorker();
 
   EXPECT_EQ(TestEmbedding(), future1.Get());
   EXPECT_EQ(TestEmbedding(), future2.Get());
-  EXPECT_EQ(2, fake_embedding_gemma_.embed_count());
+  EXPECT_EQ(2, fake_model_worker_.embed_count());
 }
 
-TEST_F(LocalAIServiceTest, EmbedForwardsDirectlyWhenReady) {
-  BindFakeEmbeddingGemma();
+TEST_F(LocalAIServiceTest, GenerateEmbeddingsForwardsDirectlyWhenReady) {
+  BindFakeModelWorker();
 
-  // Now that we're ready, Embed should go directly to the remote.
-  service_->Embed("test", base::DoNothing());
+  // Now that we're ready, GenerateEmbeddings should go directly to
+  // the remote.
+  service_->GenerateEmbeddings("test", base::DoNothing());
 
   base::test::TestFuture<const std::vector<double>&> future;
-  service_->Embed("direct", future.GetCallback());
+  service_->GenerateEmbeddings("direct", future.GetCallback());
 
   EXPECT_EQ(TestEmbedding(), future.Get());
 }
 
 TEST_F(LocalAIServiceTest, ShutdownFailsPendingRequests) {
   base::test::TestFuture<const std::vector<double>&> future;
-  service_->Embed("pending", future.GetCallback());
+  service_->GenerateEmbeddings("pending", future.GetCallback());
 
   static_cast<KeyedService*>(service_.get())->Shutdown();
 
@@ -137,7 +140,7 @@ TEST_F(LocalAIServiceTest, ShutdownFailsPendingRequests) {
 
 TEST_F(LocalAIServiceTest, OnBackgroundContentsDestroyedFailsPending) {
   base::test::TestFuture<const std::vector<double>&> future;
-  service_->Embed("pending", future.GetCallback());
+  service_->GenerateEmbeddings("pending", future.GetCallback());
 
   delegate()->OnBackgroundContentsDestroyed();
 
@@ -145,21 +148,21 @@ TEST_F(LocalAIServiceTest, OnBackgroundContentsDestroyedFailsPending) {
 }
 
 TEST_F(LocalAIServiceTest, ReinitializesAfterDestroyed) {
-  BindFakeEmbeddingGemma();
+  BindFakeModelWorker();
 
   delegate()->OnBackgroundContentsDestroyed();
 
-  // A new Embed() call should queue (not crash) since state
-  // was reset.
+  // A new GenerateEmbeddings() call should queue (not crash) since
+  // state was reset.
   base::test::TestFuture<const std::vector<double>&> future;
-  service_->Embed("after-crash", future.GetCallback());
+  service_->GenerateEmbeddings("after-crash", future.GetCallback());
 
   EXPECT_FALSE(future.IsReady());
 }
 
 TEST_F(LocalAIServiceTest, DoubleShutdownIsIdempotent) {
   base::test::TestFuture<const std::vector<double>&> future;
-  service_->Embed("pending", future.GetCallback());
+  service_->GenerateEmbeddings("pending", future.GetCallback());
 
   auto* keyed_service = static_cast<KeyedService*>(service_.get());
   keyed_service->Shutdown();

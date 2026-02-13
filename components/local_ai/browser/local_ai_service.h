@@ -26,17 +26,13 @@ class BrowserContext;
 
 namespace local_ai {
 
-// LocalAIService provides on-device machine learning capabilities, currently
-// using the Candle ML framework for execution via WebAssembly.
+// LocalAIService provides on-device machine learning capabilities.
 //
 // This service manages:
-// - A BackgroundWebContents that loads and runs the WASM-based ML model
-// - Communication between the browser process and the WASM renderer via Mojo
+// - A BackgroundWebContents that loads and runs the ML model worker
+// - Communication between the browser process and the renderer via Mojo
 // - Request queueing while the model initializes
 // - Cleanup on shutdown and renderer crash
-//
-// The service is currently implemented using Candle (see candle_embedding_gemma
-// resources), but the API is framework-agnostic to allow future flexibility.
 class LocalAIService : public KeyedService,
                        public mojom::LocalAIService,
                        public BackgroundWebContents::Delegate {
@@ -57,10 +53,11 @@ class LocalAIService : public KeyedService,
   mojo::PendingRemote<mojom::LocalAIService> MakeRemote();
   void Bind(mojo::PendingReceiver<mojom::LocalAIService> receiver);
 
-  void BindEmbeddingGemma(
-      mojo::PendingRemote<mojom::EmbeddingGemmaInterface>) override;
-
-  void Embed(const std::string& text, EmbedCallback callback) override;
+  // mojom::LocalAIService:
+  void RegisterOnDeviceModelWorker(
+      mojo::PendingRemote<mojom::OnDeviceModelWorker> worker) override;
+  void GenerateEmbeddings(const std::string& text,
+                          GenerateEmbeddingsCallback callback) override;
 
  private:
   // KeyedService:
@@ -70,34 +67,35 @@ class LocalAIService : public KeyedService,
   void OnBackgroundContentsReady() override;
   void OnBackgroundContentsDestroyed() override;
 
-  void EnsureWasmWebContents();
-  void CloseWasmWebContents();
+  void EnsureBackgroundContents();
+  void CloseBackgroundContents();
 
   raw_ptr<content::BrowserContext> browser_context_ = nullptr;
 
-  // Background WebContents that loads the WASM and maintains the model
+  // Background WebContents that loads and maintains the model worker
   std::unique_ptr<BackgroundWebContents> background_contents_;
 
   mojo::ReceiverSet<mojom::LocalAIService> receivers_;
 
-  // Single embedder remote (shared by all callers)
-  mojo::Remote<mojom::EmbeddingGemmaInterface> embedding_gemma_remote_;
+  // Single model worker remote (shared by all callers)
+  mojo::Remote<mojom::OnDeviceModelWorker> model_worker_remote_;
 
-  // Holds an Embed() call that arrived before the WASM model was ready.
-  // Requests are drained in FIFO order once the model is initialized.
-  struct PendingEmbedRequest {
-    PendingEmbedRequest();
-    PendingEmbedRequest(std::string text, EmbedCallback callback);
-    ~PendingEmbedRequest();
-    PendingEmbedRequest(PendingEmbedRequest&&);
-    PendingEmbedRequest& operator=(PendingEmbedRequest&&);
+  // Holds a GenerateEmbeddings() call that arrived before the model was
+  // ready. Requests are drained in FIFO order once the model is
+  // initialized.
+  struct PendingRequest {
+    PendingRequest();
+    PendingRequest(std::string text, GenerateEmbeddingsCallback callback);
+    ~PendingRequest();
+    PendingRequest(PendingRequest&&);
+    PendingRequest& operator=(PendingRequest&&);
 
     std::string text;
-    EmbedCallback callback;
+    GenerateEmbeddingsCallback callback;
   };
-  std::vector<PendingEmbedRequest> pending_embed_requests_;
+  std::vector<PendingRequest> pending_requests_;
 
-  void ProcessPendingEmbedRequests();
+  void ProcessPendingRequests();
 
   WebContentsTagCallback web_contents_tag_callback_;
 

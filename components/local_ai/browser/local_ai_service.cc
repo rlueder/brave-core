@@ -11,15 +11,15 @@
 
 namespace local_ai {
 
-LocalAIService::PendingEmbedRequest::PendingEmbedRequest() = default;
-LocalAIService::PendingEmbedRequest::PendingEmbedRequest(std::string text,
-                                                         EmbedCallback callback)
+LocalAIService::PendingRequest::PendingRequest() = default;
+LocalAIService::PendingRequest::PendingRequest(
+    std::string text,
+    GenerateEmbeddingsCallback callback)
     : text(std::move(text)), callback(std::move(callback)) {}
-LocalAIService::PendingEmbedRequest::~PendingEmbedRequest() = default;
-LocalAIService::PendingEmbedRequest::PendingEmbedRequest(
-    PendingEmbedRequest&&) = default;
-LocalAIService::PendingEmbedRequest&
-LocalAIService::PendingEmbedRequest::operator=(PendingEmbedRequest&&) = default;
+LocalAIService::PendingRequest::~PendingRequest() = default;
+LocalAIService::PendingRequest::PendingRequest(PendingRequest&&) = default;
+LocalAIService::PendingRequest& LocalAIService::PendingRequest::operator=(
+    PendingRequest&&) = default;
 
 // LocalAIService implementation
 LocalAIService::LocalAIService(content::BrowserContext* browser_context,
@@ -35,7 +35,7 @@ LocalAIService::LocalAIService(content::BrowserContext* browser_context,
 }
 
 LocalAIService::~LocalAIService() {
-  CloseWasmWebContents();
+  CloseBackgroundContents();
 }
 
 mojo::PendingRemote<mojom::LocalAIService> LocalAIService::MakeRemote() {
@@ -49,48 +49,48 @@ void LocalAIService::Bind(
   receivers_.Add(this, std::move(receiver));
 }
 
-void LocalAIService::BindEmbeddingGemma(
-    mojo::PendingRemote<mojom::EmbeddingGemmaInterface> pending_remote) {
-  // Bind the single embedder remote from our WASM WebContents
-  if (embedding_gemma_remote_.is_bound()) {
-    DVLOG(1) << "EmbeddingGemma already bound, resetting";
-    embedding_gemma_remote_.reset();
+void LocalAIService::RegisterOnDeviceModelWorker(
+    mojo::PendingRemote<mojom::OnDeviceModelWorker> worker) {
+  if (model_worker_remote_.is_bound()) {
+    DVLOG(1) << "Model worker already bound, resetting";
+    model_worker_remote_.reset();
   }
-  embedding_gemma_remote_.Bind(std::move(pending_remote));
+  model_worker_remote_.Bind(std::move(worker));
 
   // Set up disconnect handler - this handles mojo pipe disconnections
   // that may not be renderer crashes (e.g. manual kills)
-  embedding_gemma_remote_.set_disconnect_handler(base::BindOnce(
+  model_worker_remote_.set_disconnect_handler(base::BindOnce(
       [](LocalAIService* service) {
-        DVLOG(1) << "EmbeddingGemma remote disconnected";
+        DVLOG(1) << "Model worker remote disconnected";
         // Swap-and-process to guard against re-entrancy
-        std::vector<PendingEmbedRequest> requests;
-        requests.swap(service->pending_embed_requests_);
+        std::vector<PendingRequest> requests;
+        requests.swap(service->pending_requests_);
         for (auto& request : requests) {
           std::move(request.callback).Run({});
         }
-        // Close WebContents and reset state so next Embed() will
-        // reinitialize
-        service->CloseWasmWebContents();
+        // Close WebContents and reset state so next
+        // GenerateEmbeddings() will reinitialize
+        service->CloseBackgroundContents();
       },
       base::Unretained(this)));
 
-  DVLOG(3) << "BindEmbeddingGemma: Bound embedder remote";
+  DVLOG(3) << "RegisterOnDeviceModelWorker: Bound model worker";
 
-  ProcessPendingEmbedRequests();
+  ProcessPendingRequests();
 }
 
-void LocalAIService::Embed(const std::string& text, EmbedCallback callback) {
+void LocalAIService::GenerateEmbeddings(const std::string& text,
+                                        GenerateEmbeddingsCallback callback) {
   // Ensure WebContents exists
-  EnsureWasmWebContents();
+  EnsureBackgroundContents();
 
-  if (!embedding_gemma_remote_.is_bound()) {
-    DVLOG(3) << "Embedding not ready yet, queuing embed request";
-    pending_embed_requests_.emplace_back(text, std::move(callback));
+  if (!model_worker_remote_.is_bound()) {
+    DVLOG(3) << "Model worker not ready yet, queuing request";
+    pending_requests_.emplace_back(text, std::move(callback));
     return;
   }
 
-  embedding_gemma_remote_->Embed(text, std::move(callback));
+  model_worker_remote_->GenerateEmbeddings(text, std::move(callback));
 }
 
 void LocalAIService::OnBackgroundContentsReady() {
@@ -99,56 +99,56 @@ void LocalAIService::OnBackgroundContentsReady() {
 
 void LocalAIService::OnBackgroundContentsDestroyed() {
   DVLOG(1) << "LocalAIService: Background contents destroyed";
-  std::vector<PendingEmbedRequest> requests;
-  requests.swap(pending_embed_requests_);
+  std::vector<PendingRequest> requests;
+  requests.swap(pending_requests_);
   for (auto& request : requests) {
     std::move(request.callback).Run({});
   }
   background_contents_.reset();
-  embedding_gemma_remote_.reset();
+  model_worker_remote_.reset();
 }
 
 void LocalAIService::Shutdown() {
   DVLOG(3) << "LocalAIService: Shutting down";
-  CloseWasmWebContents();
+  CloseBackgroundContents();
 }
 
-void LocalAIService::ProcessPendingEmbedRequests() {
-  if (!embedding_gemma_remote_.is_bound()) {
+void LocalAIService::ProcessPendingRequests() {
+  if (!model_worker_remote_.is_bound()) {
     return;
   }
 
-  DVLOG(3) << "Processing " << pending_embed_requests_.size()
-           << " pending embed requests";
+  DVLOG(3) << "Processing " << pending_requests_.size() << " pending requests";
 
   // Swap-and-process to guard against re-entrancy
-  std::vector<PendingEmbedRequest> requests;
-  requests.swap(pending_embed_requests_);
+  std::vector<PendingRequest> requests;
+  requests.swap(pending_requests_);
   for (auto& request : requests) {
-    embedding_gemma_remote_->Embed(request.text, std::move(request.callback));
+    model_worker_remote_->GenerateEmbeddings(request.text,
+                                             std::move(request.callback));
   }
 }
 
-void LocalAIService::EnsureWasmWebContents() {
+void LocalAIService::EnsureBackgroundContents() {
   if (background_contents_) {
     return;  // Already created
   }
 
   DVLOG(3) << "LocalAIService: Creating BackgroundWebContents";
 
-  GURL wasm_url(kUntrustedCandleEmbeddingGemmaWasmURL);
-  DVLOG(3) << "LocalAIService: Loading WASM from " << wasm_url;
+  GURL worker_url(kUntrustedOnDeviceModelWorkerURL);
+  DVLOG(3) << "LocalAIService: Loading model worker from " << worker_url;
   background_contents_ = std::make_unique<BackgroundWebContents>(
-      browser_context_, wasm_url, this, web_contents_tag_callback_);
+      browser_context_, worker_url, this, web_contents_tag_callback_);
 }
 
-void LocalAIService::CloseWasmWebContents() {
+void LocalAIService::CloseBackgroundContents() {
   DVLOG(3) << "LocalAIService: Closing BackgroundWebContents "
               "to free memory";
 
-  embedding_gemma_remote_.reset();
-  std::vector<PendingEmbedRequest> requests;
-  requests.swap(pending_embed_requests_);
+  model_worker_remote_.reset();
+  std::vector<PendingRequest> requests;
+  requests.swap(pending_requests_);
   for (auto& request : requests) {
     std::move(request.callback).Run({});
   }
