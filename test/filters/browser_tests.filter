@@ -438,6 +438,7 @@
 -DisplayBrowser/WebAppLinkCapturingParameterizedBrowserTest.CheckLinkCaptureCombinations/*
 -DisplayModeBrowser/WebAppLinkCapturingParameterizedBrowserTest.CheckLinkCaptureCombinations/*
 -FormPostSubmissions/WebAppLinkCapturingParameterizedBrowserTest.CheckLinkCaptureCombinations/*
+-LinkCapturingNavigationThrottleBrowserTest.*
 -NavigateNew_ServerRedirect_AtoA_StartInApp/WebAppLinkCapturingParameterizedBrowserTest.CheckLinkCaptureCombinations/*
 -NavigateNew_ServerRedirect_AtoA_StartInTab/WebAppLinkCapturingParameterizedBrowserTest.CheckLinkCaptureCombinations/*
 -Redirect_CaptureNew_BrowserApp/WebAppLinkCapturingParameterizedBrowserTest.CheckLinkCaptureCombinations/*
@@ -533,6 +534,7 @@
 -RemovePurposeHeaderVariations/NoStatePrefetchPurposeHeaderBrowserTest.PurposeHeaderIsSet/*
 -RemovePurposeHeaderVariations/NoStatePrefetchPurposeHeaderBrowserTest.SecPurposeHeaderIsSet/*
 -SafeBrowsingBlockingPageAsyncChecksPrerenderingTest.PostCommitInterstitialReportThreatDetails_DontContainPrerenderingInfo
+-SearchKeepAliveRequestTrackerBrowserTest.BasicPrefetchFunctionality
 -SearchPreloadBrowserTest.*
 -SearchPreloadBrowserTest_ErrorBackoffDuration.*
 -SearchPreloadBrowserTest_Limit.*
@@ -1526,6 +1528,7 @@
 -IOSPromosUtilsTest.InvokeUi_payments
 -MoveBookmarksToAccountDialogTest.Show
 -PasswordRevampedManagementBubbleBrowserTest.InvokeUi_ManagePasswordBubbleWithRevampedDesign/*
+-PdfViewerPrivateBrowserTestGlicEnabled.GlicSummarize
 -PlusAddressServiceBrowserTest.VerifyShouldShowManualFallback
 -PlusAddressServiceBrowserTest.VerifySupportsPlusAddresses
 -PrivacyBudgetMetaExperimentBrowserTestWithUkmRecording.ReportsEncounteredSurfacesAndDocumentCreatedMetrics
@@ -1686,6 +1689,8 @@
 -ProfileTypeChoiceUIPixelTest.InvokeUi_default/DarkRtlSmallTS
 -ProfileTypeChoiceUIPixelTest.InvokeUi_default/Default
 -ProfileTypeChoiceUIPixelTest.InvokeUi_default/Regular
+-ProfileTypeChoiceUIPixelTest.InvokeUi_default/RegularRefreshedUI
+-ProfileTypeChoiceUIPixelTest.InvokeUi_default/RegularRefreshedUIDarkMode
 -ProfileTypeChoiceUIPixelTest.InvokeUi_default/RegularUsePrimaryAndTonalButtons
 -ProfileTypeChoiceUIPixelTest.InvokeUi_default/TS
 
@@ -2703,6 +2708,23 @@
 # Flaky favicon fetch failure. Also disabled on Mac upstream
 # (crbug.com/333331507).
 -InstallableManagerBrowserTest.CheckFavicon
+
+# These tests fail because they expect Chromium in the title but because we
+# enable Google branding in the related code Chrome is used instead (Chromium
+# PDF Viewer vs Chrome PDF Viewer).
+-All/SubframeTaskPDFBrowserTest.TaskManagerShowsIncognitoPDFSubframeTask/1
+-All/SubframeTaskPDFBrowserTest.TaskManagerShowsPDFSubframeTask/1
+
+# These tests fail because they override search engines list and when our code
+# attempts to set Brave Search as the engine for the private window it can't
+# find the engine in the list and CHECKs.
+-PrepopulatedEnginesMigrationBrowserTest.*
+-PrepopulatedEnginesXRegionNoMigrationBrowserTest.*
+-PrepopulatedEnginesXRegionMigrationBrowserTest.*
+
+# This test fails because the expected height of the toolbar buttons (34px)
+# doesn't match our value (28px).
+-WebUIToolbarWebViewSplitTabsBrowserTest.VerifyDynamicTouchModeUpdate
 
 # Tests below this point have not been diagnosed or had issues created yet.
 -_/WebrtcLoggingPrivateApiStartEventLoggingTestPolicyEnabled.*
