@@ -18,6 +18,7 @@
 #include "brave/components/brave_shields/core/browser/ad_block_resource_provider.h"
 #include "brave/components/brave_shields/core/browser/filter_list_catalog_entry.h"
 #include "brave/components/cosmetic_filters/resources/grit/cosmetic_filters_generated.h"
+#include "brave/components/services/brave_shields/filter_set_service_in_process_launcher.h"
 #include "brave/ios/browser/api/brave_shields/adblock_filter_list_catalog_entry+private.h"
 #include "brave/ios/browser/api/brave_shields/adblock_service+private.h"
 #include "components/application_locale_storage/application_locale_storage.h"
@@ -128,7 +129,9 @@ void AdBlockResourceObserver::OnResourcesLoaded(
     _catalogProvider =
         std::make_unique<brave_shields::AdBlockFilterListCatalogProvider>(_cus);
     _filtersProviderManager =
-        std::make_unique<brave_shields::AdBlockFiltersProviderManager>();
+        std::make_unique<brave_shields::AdBlockFiltersProviderManager>(
+            base::BindRepeating(
+                &brave_shields::LaunchInProcessFilterSetParser));
     _serviceManager =
         std::make_unique<brave_shields::AdBlockComponentServiceManager>(
             GetApplicationContext()->GetLocalState(),
