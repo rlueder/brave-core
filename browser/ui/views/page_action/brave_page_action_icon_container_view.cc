@@ -10,6 +10,7 @@
 #include "base/check_is_test.h"
 #include "brave/browser/ui/page_action/brave_page_action_icon_type.h"
 #include "brave/components/brave_wayback_machine/buildflags/buildflags.h"
+#include "brave/components/containers/buildflags/buildflags.h"
 #include "brave/components/playlist/core/common/features.h"
 #include "brave/components/speedreader/common/buildflags/buildflags.h"
 #include "chrome/browser/profiles/profile.h"
@@ -20,6 +21,10 @@
 
 #if BUILDFLAG(ENABLE_SPEEDREADER)
 #include "brave/components/speedreader/common/features.h"
+#endif
+
+#if BUILDFLAG(ENABLE_CONTAINERS)
+#include "brave/components/containers/core/common/features.h"
 #endif
 
 namespace {
@@ -40,6 +45,15 @@ PageActionIconParams& ModifyIconParamsForBrave(PageActionIconParams& params) {
   params.types_enabled.insert(
       std::ranges::find(params.types_enabled, PageActionIconType::kSharingHub),
       brave::kWaybackMachineActionIconType);
+#endif
+
+#if BUILDFLAG(ENABLE_CONTAINERS)
+  if (base::FeatureList::IsEnabled(containers::features::kContainers)) {
+    params.types_enabled.insert(
+        std::ranges::find(params.types_enabled,
+                          PageActionIconType::kSharingHub),
+        brave::kPartitionedStorageActionIconType);
+  }
 #endif
 
   if (base::FeatureList::IsEnabled(playlist::features::kPlaylist)) {

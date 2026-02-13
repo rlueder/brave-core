@@ -3,7 +3,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+#include "base/test/run_until.h"
 #include "brave/browser/ui/browser_commands.h"
+#include "brave/browser/ui/page_action/brave_page_action_icon_type.h"
 #include "brave/browser/ui/views/tabs/brave_tab.h"
 #include "brave/components/containers/content/browser/storage_partition_utils.h"
 #include "brave/components/containers/core/common/features.h"
@@ -15,6 +17,8 @@
 #include "chrome/browser/ui/browser_navigator_params.h"
 #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"
 #include "chrome/browser/ui/views/frame/browser_view.h"
+#include "chrome/browser/ui/views/frame/toolbar_button_provider.h"
+#include "chrome/browser/ui/views/page_action/page_action_icon_view.h"
 #include "chrome/test/base/in_process_browser_test.h"
 #include "chrome/test/base/ui_test_utils.h"
 #include "components/content_settings/core/browser/host_content_settings_map.h"
@@ -896,6 +900,54 @@ IN_PROC_BROWSER_TEST_F(ContainersBrowserTest, ShouldShowTabAccent) {
 
   tab_in_container->SetBounds(0, 0, 30, 30);
   EXPECT_FALSE(tab_in_container->ShouldShowLargeAccentIcon());
+}
+
+IN_PROC_BROWSER_TEST_F(ContainersBrowserTest,
+                       PartitionedStorageActionIconShownOrHiddenPerTab) {
+  auto* tab_strip_model = browser()->tab_strip_model();
+  ASSERT_EQ(1, tab_strip_model->count());
+
+  auto* icon_view =
+      browser()
+          ->GetBrowserView()
+          .toolbar_button_provider()
+          ->GetPageActionIconView(brave::kPartitionedStorageActionIconType);
+  ASSERT_NE(nullptr, icon_view);
+
+  const GURL url("https://a.test/simple.html");
+
+  // Tab 0: default (no container) -> icon should be hidden.
+  ASSERT_TRUE(ui_test_utils::NavigateToURL(browser(), url));
+  EXPECT_TRUE(content::WaitForLoadStop(tab_strip_model->GetWebContentsAt(0)));
+  EXPECT_FALSE(icon_view->GetVisible())
+      << "PartitionedStorage icon should be hidden on default tab.";
+
+  // Open a tab in a container -> icon should be visible on the active tab.
+  auto container = containers::mojom::Container::New();
+  container->id = "test-container";
+  container->name = "Test Container";
+  container->icon = containers::mojom::Icon::kSocial;
+  container->background_color = SK_ColorYELLOW;
+
+  brave::OpenUrlInContainer(browser(), url, container);
+  EXPECT_EQ(2, tab_strip_model->count());
+  EXPECT_TRUE(content::WaitForLoadStop(tab_strip_model->GetWebContentsAt(1)));
+
+  EXPECT_TRUE(icon_view->GetVisible())
+      << "PartitionedStorage icon should be visible on container tab.";
+
+  // Switch to tab 0 (default) -> icon should be hidden.
+  tab_strip_model->ActivateTabAt(0);
+  RunScheduledLayouts();
+  ASSERT_TRUE(base::test::RunUntil([&]() { return !icon_view->GetVisible(); }))
+      << "PartitionedStorage icon should be hidden when default tab is active.";
+
+  // Switch back to tab 1 (container) -> icon should be visible.
+  tab_strip_model->ActivateTabAt(1);
+  RunScheduledLayouts();
+  ASSERT_TRUE(base::test::RunUntil([&]() { return icon_view->GetVisible(); }))
+      << "PartitionedStorage icon should be visible when container tab is "
+         "active.";
 }
 
 }  // namespace containers

@@ -3,9 +3,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "base/feature_list.h"
 #include "brave/browser/ui/page_action/brave_page_action_icon_type.h"
 #include "brave/browser/ui/views/location_bar/brave_star_view.h"
 #include "brave/components/brave_wayback_machine/buildflags/buildflags.h"
+#include "brave/components/containers/buildflags/buildflags.h"
 #include "brave/components/playlist/core/common/buildflags/buildflags.h"
 #include "brave/components/speedreader/common/buildflags/buildflags.h"
 #include "chrome/browser/ui/page_action/page_action_icon_type.h"
@@ -13,6 +15,11 @@
 
 #if BUILDFLAG(ENABLE_BRAVE_WAYBACK_MACHINE)
 #include "brave/browser/ui/views/page_action/wayback_machine_action_icon_view.h"
+#endif
+
+#if BUILDFLAG(ENABLE_CONTAINERS)
+#include "brave/browser/ui/views/page_action/partitioned_storage_action_view.h"
+#include "brave/components/containers/core/common/features.h"
 #endif
 
 #if BUILDFLAG(ENABLE_SPEEDREADER)
@@ -50,6 +57,19 @@ constexpr bool kSupportsPlaylistActionIconView = false;
 #define BRAVE_WAYBACK_MACHINE_PAGE_ACTION_CASE
 #endif
 
+#if BUILDFLAG(ENABLE_CONTAINERS)
+#define BRAVE_PARTITIONED_STORAGE_ACTION_CASE                               \
+  case brave::kPartitionedStorageActionIconType:                            \
+    CHECK(base::FeatureList::IsEnabled(containers::features::kContainers)); \
+    add_page_action_icon(                                                   \
+        type, std::make_unique<PartitionedStorageActionView>(               \
+                  params.icon_label_bubble_delegate,                        \
+                  params.page_action_icon_delegate, params.browser));       \
+    break;
+#else
+#define BRAVE_PARTITIONED_STORAGE_ACTION_CASE
+#endif
+
 // Circumvent creation of CookieControlsIconView in
 // PageActionIconController::Init's switch statement by injecting a case
 // with a non-existent value created above.
@@ -67,6 +87,7 @@ constexpr bool kSupportsPlaylistActionIconView = false;
     break;                                                  \
     BRAVE_WAYBACK_MACHINE_PAGE_ACTION_CASE                  \
     BRAVE_PAGE_ACTION_ICON_CONTROLLER_SPEEDREADER_CASE      \
+    BRAVE_PARTITIONED_STORAGE_ACTION_CASE                   \
   case brave::kUndefinedPageActionIconType
 
 // We define additional PageActionIconType values (in
@@ -86,6 +107,7 @@ constexpr bool kSupportsPlaylistActionIconView = false;
 #undef StarView
 #undef kShown
 #undef kCookieControls
+#undef BRAVE_PARTITIONED_STORAGE_ACTION_CASE
 #undef BRAVE_WAYBACK_MACHINE_PAGE_ACTION_CASE
 #undef BRAVE_PAGE_ACTION_ICON_CONTROLLER_SPEEDREADER_CASE
 
