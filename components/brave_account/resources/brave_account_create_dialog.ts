@@ -3,7 +3,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { CrLitElement, css, html } from '//resources/lit/v3_0/lit.rollup.js'
+import {
+  CrLitElement,
+  PropertyValues,
+  css,
+  html,
+} from '//resources/lit/v3_0/lit.rollup.js'
 import { loadTimeData } from '//resources/js/load_time_data.js'
 
 import {
@@ -22,7 +27,7 @@ import {
 // @ts-expect-error
 import { Registration } from 'chrome://resources/brave/opaque_ke.bundle.js'
 
-class PasswordStrengthMeter extends CrLitElement {
+class PasswordStrengthMeterElement extends CrLitElement {
   static get is() {
     return 'password-strength-meter'
   }
@@ -103,8 +108,13 @@ class PasswordStrengthMeter extends CrLitElement {
     }
   }
 
-  override updated(changedProperties: Map<PropertyKey, unknown>) {
-    if (changedProperties.has('strength')) {
+  override updated(changedProperties: PropertyValues<this>) {
+    super.updated(changedProperties)
+    const changedPrivateProperties = changedProperties as Map<
+      PropertyKey,
+      unknown
+    >
+    if (changedPrivateProperties.has('strength')) {
       this.category =
         this.strength < 60 ? 'Weak' : this.strength < 100 ? 'Medium' : 'Strong'
     }
@@ -116,11 +126,14 @@ class PasswordStrengthMeter extends CrLitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'password-strength-meter': PasswordStrengthMeter
+    'password-strength-meter': PasswordStrengthMeterElement
   }
 }
 
-customElements.define(PasswordStrengthMeter.is, PasswordStrengthMeter)
+customElements.define(
+  PasswordStrengthMeterElement.is,
+  PasswordStrengthMeterElement,
+)
 
 export class BraveAccountCreateDialogElement extends CrLitElement {
   static get is() {
