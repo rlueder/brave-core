@@ -23,18 +23,22 @@ import org.chromium.chrome.browser.lens.LensController;
 import org.chromium.chrome.browser.locale.LocaleManager;
 import org.chromium.chrome.browser.multiwindow.MultiInstanceManager;
 import org.chromium.chrome.browser.omnibox.fusebox.FuseboxCoordinator;
+import org.chromium.chrome.browser.omnibox.suggestions.AutocompleteCoordinator;
 import org.chromium.chrome.browser.omnibox.suggestions.OmniboxLoadUrlParams;
 import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.tabmodel.TabModelSelector;
 import org.chromium.chrome.browser.theme.ThemeUtils;
 import org.chromium.chrome.browser.ui.theme.BrandedColorScheme;
 import org.chromium.components.browser_ui.accessibility.PageZoomIndicatorCoordinator;
+import org.chromium.components.omnibox.AutocompleteInput;
+import org.chromium.components.omnibox.OmniboxFocusReason;
 import org.chromium.components.search_engines.TemplateUrlService;
 import org.chromium.ui.base.PageTransition;
 import org.chromium.ui.base.WindowAndroid;
 import org.chromium.ui.modaldialog.ModalDialogManager;
 import org.chromium.ui.permissions.PermissionCallback;
 
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -50,6 +54,9 @@ public class BraveLocationBarMediator extends LocationBarMediator {
     private boolean mIsLocationBarFocusedFromNtpScroll;
     private Context mContext;
     private OneshotSupplier<TemplateUrlService> mTemplateUrlServiceSupplier;
+    private List<Runnable> mDeferredNativeRunnables;
+    private AutocompleteCoordinator mAutocompleteCoordinator;
+    private UrlBarCoordinator mUrlCoordinator;
 
     private static final @BrandedColorScheme int BRANDED_COLOR_SCHEME =
             BrandedColorScheme.APP_DEFAULT;
@@ -232,5 +239,27 @@ public class BraveLocationBarMediator extends LocationBarMediator {
         } else {
             setSearchQuery(query);
         }
+    }
+
+    public void setSearchQuery(String query) {
+        if (TextUtils.isEmpty(query)) return;
+
+        if (!mNativeInitialized) {
+            mDeferredNativeRunnables.add(() -> setSearchQuery(query));
+            return;
+        }
+
+        // Ensure the UrlBar has focus before entering text. If the UrlBar is not focused,
+        // autocomplete text will be updated but the visible text will not.
+        beginInput(
+                new AutocompleteInput()
+                        .setSuppressAutomaticSuggestionsUntilUserStartsTyping(true)
+                        .setFocusReason(OmniboxFocusReason.DEFAULT_WITH_HARDWARE_KEYBOARD));
+        setUrlBarText(
+                UrlBarData.forNonUrlText(query),
+                UrlBar.ScrollType.NO_SCROLL,
+                UrlBarData.SELECT_ALL);
+        mAutocompleteCoordinator.startAutocompleteForQuery(query);
+        mUrlCoordinator.setKeyboardVisibility(true, false);
     }
 }
