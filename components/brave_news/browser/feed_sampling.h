@@ -24,6 +24,8 @@
 #include "base/rand_util.h"
 #include "base/types/id_type.h"
 #include "brave/components/brave_news/common/brave_news.mojom-forward.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 
 namespace brave_news {
 
@@ -87,7 +89,7 @@ struct ArticleMetadata {
   NameId publisher_id;
 
   // All the channels this Article belongs to (interned IDs).
-  base::flat_set<NameId> channels;
+  absl::flat_hash_set<NameId> channels;
 
   ArticleMetadata();
   ArticleMetadata(const ArticleMetadata&) = delete;
@@ -106,7 +108,8 @@ using GetWeighting =
     base::FunctionRef<double(const mojom::FeedItemMetadataPtr& data,
                              const ArticleMetadata& meta)>;
 
-using PublisherChannels = base::flat_map<NameId, base::flat_set<NameId>>;
+using PublisherChannels =
+    absl::flat_hash_map<NameId, absl::flat_hash_set<NameId>>;
 
 // PickArticles is a strategy used to pick articles (for example, taking the
 // first article). Different feeds use different strategies for picking

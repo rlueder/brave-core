@@ -108,7 +108,8 @@ ArticleMetadata GetArticleMetadata(const mojom::FeedItemMetadataPtr& article,
   metadata.subscribed = subscribed_weight != 0,
   metadata.discoverable = discoverable;
   metadata.publisher_id = publisher_id;
-  metadata.channels = base::flat_set<NameId>(std::move(channels));
+  metadata.channels =
+      absl::flat_hash_set<NameId>(channels.begin(), channels.end());
   return metadata;
 }
 
