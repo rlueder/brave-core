@@ -188,7 +188,8 @@ public class BraveNewTabPage extends NewTabPage {
                         /* viewportView= */ null,
                         /* actionDelegate= */ null,
                         mTabStripHeightSupplier,
-                        edgeToEdgeControllerSupplier);
+                        edgeToEdgeControllerSupplier,
+                        /*moduleRegistry */ null);
 
         mFeedSurfaceProvider = feedSurfaceCoordinator;
     }
