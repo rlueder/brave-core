@@ -558,9 +558,9 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
 "===================================================================
 --- ../chrome/browser/resources/signin/profile_picker/profile_picker_main_view.html.ts
 +++ gen/chrome/browser/resources/signin/profile_picker/preprocessed/profile_picker_main_view.html.ts
-@@ -14,10 +14,9 @@
-     }
-   }()}
+@@ -10,10 +10,9 @@
+   <link href=\\"glic_profile_branding.css\\" rel=\\"stylesheet\\" />
+ \` : ''}
  <div class=\\"flex-container\\">
    <div class=\\"title-container\\">
 -    <img id=\\"picker-logo\\" @click=\\"\${this.onProductLogoClick_}\\"
@@ -570,7 +570,7 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
      <div class=\\"subtitle\\" .innerHTML=\\"\${this.getSubtitle_()}\\"></div>
    </div>
    <div id=\\"profilesWrapper\\" ?hidden=\\"\${(this.shouldHideProfilesWrapper_())}\\">
-@@ -28,48 +27,33 @@
+@@ -24,42 +23,29 @@
              @toggle-drag=\\"\${this.toggleDrag_}\\"
              @disable-all-picker-buttons=\\"\${this.disableAllPickerButtons_}\\">
          </profile-card>
@@ -619,13 +619,6 @@ exports[`mangled files should have up to date snapshots ./chromium_src/chrome/br
        $i18n{openAllProfilesButtonText}
      </cr-button>
    </div>
--  <cr-checkbox id=\\"askOnStartup\\" ?checked=\\"\${this.askOnStartup_}\\"
--      @checked-changed=\\"\${this.onAskOnStartupChangedByUser_}\\"
--      ?hidden=\\"\${this.hideAskOnStartup_}\\">
-+  <cr-checkbox id=\\"askOnStartup\\" ?checked=\\"\${this.askOnStartup_}\\" @checked-changed=\\"\${this.onAskOnStartupChangedByUser_}\\" ?hidden=\\"\${this.hideAskOnStartup_}\\">
-     $i18n{askOnStartupCheckboxText}
-   </cr-checkbox>
- </div>
  
 "
 `;
