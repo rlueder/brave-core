@@ -2,6 +2,7 @@ include_rules = [
   "+components/component_updater",
   "+components/update_client",
   "+content/public/browser",
+  "+content/public/test",
   "+crypto",
   "+services/network/public",
 ]

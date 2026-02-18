@@ -47,4 +47,10 @@ source_set("unit_tests") {
     "//testing/gmock",
     "//testing/gtest",
   ]
+
+  if (!is_ios) {
+    sources += [ "background_web_contents_unittest.cc" ]
+
+    deps += [ "//content/test:test_support" ]
+  }
 }
