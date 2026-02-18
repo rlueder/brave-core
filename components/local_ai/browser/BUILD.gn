@@ -19,6 +19,18 @@ static_library("browser") {
     "//components/update_client",
     "//crypto",
   ]
+
+  if (!is_ios) {
+    sources += [
+      "background_web_contents.cc",
+      "background_web_contents.h",
+    ]
+
+    deps += [
+      "//content/public/browser",
+      "//ui/base",
+    ]
+  }
 }
 
 source_set("unit_tests") {
