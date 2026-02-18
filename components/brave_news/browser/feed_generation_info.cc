@@ -288,7 +288,8 @@ mojom::FeedItemMetadataPtr FeedGenerationInfo::PickAndConsume(
   CHECK_LT(index, articles.size());
 
   auto [article, metadata] = std::move(articles[index]);
-  articles.erase(articles.begin() + index);
+  std::swap(articles[index], articles.back());
+  articles.pop_back();
 
   ReduceCounts(article, metadata);
 
@@ -351,7 +352,8 @@ void FeedGenerationInfo::ReduceCounts(const mojom::FeedItemMetadataPtr& article,
       continue;
     }
 
-    content_groups_.value().erase(it);
+    std::swap(*it, content_groups_.value().back());
+    content_groups_.value().pop_back();
   }
 }
 
