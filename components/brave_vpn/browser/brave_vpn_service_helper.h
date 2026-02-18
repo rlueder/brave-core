@@ -15,6 +15,10 @@
 class PrefService;
 
 namespace base {
+class DictValue;
+}  // namespace base
+
+namespace base {
 class Time;
 }  // namespace base
 

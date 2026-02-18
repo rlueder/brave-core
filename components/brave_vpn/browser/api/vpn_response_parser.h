@@ -8,6 +8,9 @@
 
 #include <string>
 
+namespace base {
+class Value;
+}  // namespace base
 
 namespace brave_vpn {
 

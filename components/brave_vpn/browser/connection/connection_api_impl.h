@@ -15,6 +15,10 @@
 #include "brave/components/brave_vpn/common/mojom/brave_vpn.mojom.h"
 #include "net/base/network_change_notifier.h"
 
+namespace base {
+class ListValue;
+}  // namespace base
+
 namespace network {
 class SharedURLLoaderFactory;
 }  // namespace network
