@@ -8,7 +8,6 @@
 
 #include <string>
 
-#include "base/values.h"
 
 namespace brave_vpn {
 

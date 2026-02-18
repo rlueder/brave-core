@@ -11,7 +11,6 @@
 
 #include "base/check.h"
 #include "base/memory/weak_ptr.h"
-#include "base/values.h"
 #include "brave/components/brave_ads/core/internal/account/tokens/confirmation_tokens/confirmation_tokens.h"
 #include "brave/components/brave_ads/core/internal/account/tokens/payment_tokens/payment_tokens.h"
 #include "brave/components/brave_ads/core/internal/account/wallet/wallet_info.h"

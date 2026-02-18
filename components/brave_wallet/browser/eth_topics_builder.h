@@ -8,7 +8,10 @@
 
 #include <string>
 #include <vector>
-#include "base/values.h"
+
+namespace base {
+class ListValue;
+}  // namespace base
 
 namespace brave_wallet {
 

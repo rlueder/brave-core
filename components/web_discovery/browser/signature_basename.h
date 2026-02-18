@@ -9,7 +9,6 @@
 #include <optional>
 #include <vector>
 
-#include "base/values.h"
 #include "brave/components/web_discovery/browser/server_config_loader.h"
 
 class PrefService;

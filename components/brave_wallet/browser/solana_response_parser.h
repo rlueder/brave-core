@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "base/functional/callback.h"
-#include "base/values.h"
 #include "brave/components/brave_wallet/common/brave_wallet.mojom.h"
 
 // TODO(apaymyshev): refactor utility methods to return std::optional instead

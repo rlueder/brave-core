@@ -10,7 +10,6 @@
 #include <string>
 
 #include "base/time/time.h"
-#include "base/values.h"
 #include "components/security_interstitials/content/security_interstitial_page.h"
 #include "url/gurl.h"
 

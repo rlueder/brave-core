@@ -8,7 +8,6 @@
 
 #include "base/memory/raw_ref.h"
 #include "base/run_loop.h"
-#include "base/values.h"
 #include "brave/components/ntp_background_images/browser/ntp_background_images_service.h"
 
 namespace ntp_background_images {

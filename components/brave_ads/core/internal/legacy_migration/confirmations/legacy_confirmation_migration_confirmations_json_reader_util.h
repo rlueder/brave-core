@@ -8,7 +8,6 @@
 
 #include <optional>
 
-#include "base/values.h"
 #include "brave/components/brave_ads/core/internal/account/confirmations/confirmation_info.h"
 
 namespace brave_ads::json::reader {
