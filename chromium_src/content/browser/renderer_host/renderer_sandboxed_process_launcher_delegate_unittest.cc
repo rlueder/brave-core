@@ -6,6 +6,9 @@
 #include "sandbox/win/src/sandbox_policy.h"
 #include "sandbox/win/src/sandbox_policy_base.h"
 
+// `RendererFeatureSandboxWinTest` test now derives from
+// `::sandbox::TargetConfig`. Since we previously added overrides to that class,
+// we must add them here as well.
 #define IsConfigured                         \
   IsConfigured() const override {            \
     return false;                            \
