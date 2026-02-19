@@ -21,6 +21,13 @@ LocalAIService::PendingRequest::PendingRequest(PendingRequest&&) = default;
 LocalAIService::PendingRequest& LocalAIService::PendingRequest::operator=(
     PendingRequest&&) = default;
 
+namespace {
+// Timeout before closing the BackgroundWebContents. Used as a connection
+// timeout (worker failed to register) and an idle timeout (no in-flight
+// requests after last response).
+constexpr base::TimeDelta kCloseTimeout = base::Seconds(30);
+}  // namespace
+
 // LocalAIService implementation
 LocalAIService::LocalAIService(
     BackgroundContentsFactory background_contents_factory)
@@ -49,6 +56,7 @@ void LocalAIService::RegisterOnDeviceModelWorker(
     DVLOG(1) << "Model worker already bound, resetting";
     model_worker_remote_.reset();
   }
+  close_timer_.Stop();
   model_worker_remote_.Bind(std::move(worker));
 
   // Set up disconnect handler - this handles mojo pipe disconnections
@@ -75,6 +83,7 @@ void LocalAIService::RegisterOnDeviceModelWorker(
 
 void LocalAIService::GenerateEmbeddings(const std::string& text,
                                         GenerateEmbeddingsCallback callback) {
+  // Ensure BackgroundContents exists (may have been closed due to idle)
   EnsureBackgroundContents();
 
   if (!model_worker_remote_.is_bound()) {
@@ -83,11 +92,14 @@ void LocalAIService::GenerateEmbeddings(const std::string& text,
     return;
   }
 
-  model_worker_remote_->GenerateEmbeddings(text, std::move(callback));
+  // Reset idle timer since we have activity
+  close_timer_.Stop();
+  ForwardRequest(text, std::move(callback));
 }
 
 void LocalAIService::OnBackgroundContentsDestroyed() {
   DVLOG(1) << "LocalAIService: Background contents destroyed";
+  in_flight_count_ = 0;
   std::vector<PendingRequest> requests;
   requests.swap(pending_requests_);
   for (auto& request : requests) {
@@ -113,9 +125,34 @@ void LocalAIService::ProcessPendingRequests() {
   std::vector<PendingRequest> requests;
   requests.swap(pending_requests_);
   for (auto& request : requests) {
-    model_worker_remote_->GenerateEmbeddings(request.text,
-                                             std::move(request.callback));
+    ForwardRequest(request.text, std::move(request.callback));
   }
+  MaybeStartIdleTimer();
+}
+
+void LocalAIService::ForwardRequest(const std::string& text,
+                                    GenerateEmbeddingsCallback callback) {
+  in_flight_count_++;
+  model_worker_remote_->GenerateEmbeddings(
+      text,
+      base::BindOnce(&LocalAIService::OnRequestComplete,
+                     weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
+}
+
+void LocalAIService::OnRequestComplete(GenerateEmbeddingsCallback callback,
+                                       const std::vector<double>& result) {
+  std::move(callback).Run(result);
+  in_flight_count_--;
+  MaybeStartIdleTimer();
+}
+
+void LocalAIService::MaybeStartIdleTimer() {
+  if (in_flight_count_ > 0) {
+    return;
+  }
+  close_timer_.Start(FROM_HERE, kCloseTimeout,
+                     base::BindOnce(&LocalAIService::CloseBackgroundContents,
+                                    weak_ptr_factory_.GetWeakPtr()));
 }
 
 void LocalAIService::EnsureBackgroundContents() {
@@ -128,12 +165,20 @@ void LocalAIService::EnsureBackgroundContents() {
   background_contents_ = background_contents_factory_.Run(
       base::BindOnce(&LocalAIService::OnBackgroundContentsDestroyed,
                      weak_ptr_factory_.GetWeakPtr()));
+
+  // Start connection timeout — if the worker doesn't register within
+  // kCloseTimeout, close the background contents to avoid leaking.
+  close_timer_.Start(FROM_HERE, kCloseTimeout,
+                     base::BindOnce(&LocalAIService::CloseBackgroundContents,
+                                    weak_ptr_factory_.GetWeakPtr()));
 }
 
 void LocalAIService::CloseBackgroundContents() {
   DVLOG(3) << "LocalAIService: Closing background contents "
               "to free memory";
 
+  close_timer_.Stop();
+  in_flight_count_ = 0;
   model_worker_remote_.reset();
   std::vector<PendingRequest> requests;
   requests.swap(pending_requests_);

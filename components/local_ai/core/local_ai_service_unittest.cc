@@ -94,7 +94,8 @@ class LocalAIServiceTest : public testing::Test {
         fake_model_worker_.BindNewPipeAndPassRemote());
   }
 
-  base::test::TaskEnvironment task_environment_;
+  base::test::TaskEnvironment task_environment_{
+      base::test::TaskEnvironment::TimeSource::MOCK_TIME};
   std::unique_ptr<LocalAIService> service_;
   FakeModelWorker fake_model_worker_;
   raw_ptr<FakeBackgroundContentsHost> last_created_host_ = nullptr;
@@ -180,6 +181,79 @@ TEST_F(LocalAIServiceTest, ReinitializesAfterDestroyed) {
   base::test::TestFuture<const std::vector<double>&> future;
   service_->GenerateEmbeddings("after-crash", future.GetCallback());
 
+  EXPECT_FALSE(future.IsReady());
+}
+
+TEST_F(LocalAIServiceTest, CloseTimeoutClosesWebContents) {
+  BindFakeModelWorker();
+
+  // Generate embeddings — starts the idle timer after forwarding.
+  base::test::TestFuture<const std::vector<double>&> future;
+  service_->GenerateEmbeddings("test", future.GetCallback());
+  EXPECT_EQ(TestEmbedding(), future.Get());
+
+  // Fast-forward past the close timeout (30 seconds).
+  task_environment_.FastForwardBy(base::Seconds(30));
+
+  // The idle timer should have closed the WebContents and reset the
+  // remote. A new call should queue (not resolve) since it needs to
+  // reinitialize.
+  base::test::TestFuture<const std::vector<double>&> future2;
+  service_->GenerateEmbeddings("after-idle", future2.GetCallback());
+  EXPECT_FALSE(future2.IsReady());
+}
+
+TEST_F(LocalAIServiceTest, GenerateEmbeddingsResetsCloseTimeout) {
+  BindFakeModelWorker();
+
+  // First request starts the idle timer.
+  base::test::TestFuture<const std::vector<double>&> future1;
+  service_->GenerateEmbeddings("first", future1.GetCallback());
+  EXPECT_EQ(TestEmbedding(), future1.Get());
+
+  // Advance 20 seconds (not enough to trigger close).
+  task_environment_.FastForwardBy(base::Seconds(20));
+
+  // Second request should reset the timer.
+  base::test::TestFuture<const std::vector<double>&> future2;
+  service_->GenerateEmbeddings("second", future2.GetCallback());
+  EXPECT_EQ(TestEmbedding(), future2.Get());
+
+  // Advance another 20 seconds — 40s total since start, but only
+  // 20s since last request. Timer should NOT have fired.
+  task_environment_.FastForwardBy(base::Seconds(20));
+
+  // Should still work without reinitializing.
+  base::test::TestFuture<const std::vector<double>&> future3;
+  service_->GenerateEmbeddings("third", future3.GetCallback());
+  EXPECT_EQ(TestEmbedding(), future3.Get());
+}
+
+TEST_F(LocalAIServiceTest, ConnectionTimeoutFailsPendingRequests) {
+  base::test::TestFuture<const std::vector<double>&> future;
+  service_->GenerateEmbeddings("pending", future.GetCallback());
+
+  // Worker never registers. Fast-forward past the connection timeout.
+  task_environment_.FastForwardBy(base::Seconds(30));
+
+  // Pending request should be resolved with empty vector.
+  EXPECT_EQ(std::vector<double>{}, future.Get());
+
+  // A new call should queue again (reinitializes).
+  base::test::TestFuture<const std::vector<double>&> future2;
+  service_->GenerateEmbeddings("retry", future2.GetCallback());
+  EXPECT_FALSE(future2.IsReady());
+}
+
+TEST_F(LocalAIServiceTest, IdleTimeoutFiresWhenNoPendingRequests) {
+  BindFakeModelWorker();
+
+  // No requests were pending when the worker registered. The idle timer
+  // should still close the WebContents after the timeout.
+  task_environment_.FastForwardBy(base::Seconds(30));
+
+  base::test::TestFuture<const std::vector<double>&> future;
+  service_->GenerateEmbeddings("after-idle", future.GetCallback());
   EXPECT_FALSE(future.IsReady());
 }
 

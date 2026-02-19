@@ -12,6 +12,7 @@
 
 #include "base/functional/callback.h"
 #include "base/memory/weak_ptr.h"
+#include "base/timer/timer.h"
 #include "brave/components/local_ai/core/background_contents_host.h"
 #include "brave/components/local_ai/core/local_ai.mojom.h"
 #include "components/keyed_service/core/keyed_service.h"
@@ -29,6 +30,7 @@ namespace local_ai {
 // - Communication between the browser process and the renderer via Mojo
 // - Request queueing while the model initializes
 // - Cleanup on shutdown and renderer crash
+// - Automatic cleanup after idle timeout to free memory
 class LocalAIService : public KeyedService, public mojom::LocalAIService {
  public:
   // Called when the background contents is destroyed unexpectedly
@@ -93,6 +95,19 @@ class LocalAIService : public KeyedService, public mojom::LocalAIService {
   std::vector<PendingRequest> pending_requests_;
 
   void ProcessPendingRequests();
+  void ForwardRequest(const std::string& text,
+                      GenerateEmbeddingsCallback callback);
+  void OnRequestComplete(GenerateEmbeddingsCallback callback,
+                         const std::vector<double>& result);
+  void MaybeStartIdleTimer();
+
+  // Number of requests dispatched to the model worker awaiting response.
+  int in_flight_count_ = 0;
+
+  // Closes BackgroundWebContents after a timeout. Used as a connection
+  // timeout (worker failed to register) and an idle timeout (no in-flight
+  // requests after last response).
+  base::OneShotTimer close_timer_;
 
   base::WeakPtrFactory<LocalAIService> weak_ptr_factory_{this};
 };
