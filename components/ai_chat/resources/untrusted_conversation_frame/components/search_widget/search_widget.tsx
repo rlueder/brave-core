@@ -20,9 +20,7 @@ interface SearchResult {
   meta_url: {
     favicon: string
     path: string
-    scheme: string
-    hostname: string
-    net_loc: string
+    netloc: string
   }
 }
 
@@ -63,7 +61,7 @@ function SearchCard(props: { result: SearchResult }) {
     >
       <MetaRow favicon={props.result.meta_url.favicon}>
         <span>
-          {props.result.meta_url.hostname} {props.result.meta_url.path}
+          {props.result.meta_url.netloc} {props.result.meta_url.path}
         </span>
       </MetaRow>
       <div className={styles.content}>
@@ -89,7 +87,7 @@ function DetailCard(props: { result: SearchResult }) {
       />
       <div className={styles.content}>
         <MetaRow favicon={props.result.meta_url.favicon}>
-          {props.result.meta_url.hostname}
+          {props.result.meta_url.netloc}
         </MetaRow>
         <span className={styles.title}>{props.result.title}</span>
         {props.result.age && (
@@ -191,7 +189,7 @@ export default function SearchWidget(props: {
     () =>
       props.results.reduce<Record<SearchTypes, SearchResult[]>>(
         (acc, result) => {
-          acc[resultTypeToType[result.type]].push(result)
+          acc[resultTypeToType[result.type] ?? 'web']?.push(result)
           return acc
         },
         {
