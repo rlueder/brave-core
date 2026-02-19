@@ -6,11 +6,15 @@
 #include "chrome/browser/extensions/extension_management.h"
 #include "extensions/browser/extension_util.h"
 #include "extensions/common/extension.h"
+#include "extensions/common/extension_features.h"
 
-#define contains(...)      \
-  contains(__VA_ARGS__) || \
-      extensions_mv2::IsKnownBraveHostedExtension(extension_id)
+// Combine the upstream MV2 exception list with all Brave-hosted MV2 extension
+// hashes so that our extensions are always exempt from deprecation
+#define kExtensionManifestV2ExceptionListParam         \
+  kExtensionManifestV2ExceptionListParam.Get() + "," + \
+      extensions_mv2::BuildBraveMV2ExceptionList();    \
+  extensions_features::kExtensionManifestV2ExceptionListParam
 
 #include <chrome/browser/extensions/mv2_deprecation_impact_checker.cc>
 
-#undef contains
+#undef kExtensionManifestV2ExceptionListParam
