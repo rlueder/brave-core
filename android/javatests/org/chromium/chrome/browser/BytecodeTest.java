@@ -1579,7 +1579,6 @@ public class BytecodeTest {
                         ToggleTabStackButtonCoordinator.class,
                         MonotonicObservableSupplier.class,
                         NonNullObservableSupplier.class,
-                        NonNullObservableSupplier.class,
                         Supplier.class,
                         HistoryDelegate.class,
                         boolean.class,
