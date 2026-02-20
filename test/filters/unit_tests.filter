@@ -66,6 +66,7 @@
 
 # This test fails because we disable LensOverlay, which is one of the sidepanel
 # actions the test expects to find.
+-CustomizeToolbarHandlerTest.ActionsUpdatedOnVisibilityChange
 -CustomizeToolbarHandlerTest.ListActions
 
 # These tests fail because the message they check has Brave intead of Google (or
@@ -323,6 +324,7 @@
 -ExtensionSyncServiceTransportModeTest.AccountExtensionTypeChangesWithSync
 -ExtensionSyncServiceTransportModeTest.OnlySyncAccountExtensions
 -ManagePasswordsUIControllerWithBrowserTestExplicitBrowserSignin.MovePasswordUponSigninWithExistingAccount
+-OpportunisticKeyRetrievalEnclaveManagerTest.StoringOpportunisticallyRetrievedKeyAfterSignInOfMatchingAccount
 -PeopleHandlerDiceTest.StoredAccountsList
 -PeopleHandlerDiceUnifiedConsentTest.StoredAccountsList
 -PeopleHandlerSignoutTest.SignoutNotAllowedSyncOn
