@@ -107,7 +107,7 @@ bool CanMoveTabsToExistingWindow(const Browser* browser_to_exclude) {
   GlobalBrowserCollection::GetInstance()->ForEach(
       [browser_to_exclude, &has_found](BrowserWindowInterface* browser) {
         has_found = browser != browser_to_exclude &&
-                    browser->GetBrowserForMigrationOnly()->is_type_normal() &&
+                    browser->GetType() == BrowserWindowInterface::TYPE_NORMAL &&
                     browser->GetProfile() == browser_to_exclude->profile();
         return !has_found;
       });
