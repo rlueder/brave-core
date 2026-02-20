@@ -858,6 +858,10 @@
   <message name="IDS_AUTOFILL_AI_FLIGHT_RESERVATION_ENTITY_NAME" desc="The label for something that a user can autofill when filling a form. For context, a user has been able to fill addresses within Brave for many users. Now a user can also fill a “Flight reservation”.">
     Flight
   </message>
+  <!-- TODO(crbug.com/485269384): Make Order entity translatable. -->
+  <message name="IDS_AUTOFILL_AI_ORDER_ENTITY_NAME" desc="The label for something that a user can autofill when filling a form. For context, a user has been able to fill addresses within Brave for many users. Now a user can also fill an “Order”." translateable="false">
+    Order
+  </message>
 
   <!-- Titles -->
   <message name="IDS_AUTOFILL_AI_DRIVERS_LICENSES_TITLE" desc="The title of a chip referring to drivers licenses (IDS_AUTOFILL_AI_DRIVERS_LICENSE_ENTITY_NAME) on Your saved info settings page.">
@@ -877,6 +881,9 @@
   </message>
   <message name="IDS_AUTOFILL_AI_FLIGHT_RESERVATIONS_TITLE" desc="The title of a chip referring to flights (IDS_AUTOFILL_AI_FLIGHT_RESERVATION_ENTITY_NAME) on Your saved info settings page.">
     Flight reservations
+  </message>
+  <message name="IDS_AUTOFILL_AI_ORDERS_TITLE" desc="The title of a chip referring to orders (IDS_AUTOFILL_AI_ORDER_ENTITY_NAME) on Your saved info settings page." translateable="false">
+    Orders
   </message>
 
   <!-- Add entity strings -->
@@ -1033,6 +1040,29 @@
     VIN (Vehicle Identification Number)
   </message>
 
+  <!-- Attributes of the order entity -->
+  <message name="IDS_AUTOFILL_AI_ORDER_ID_ATTRIBUTE_NAME" translateable="false">
+    Id
+  </message>
+  <message name="IDS_AUTOFILL_AI_ORDER_ACCOUNT_ATTRIBUTE_NAME" translateable="false">
+    Account
+  </message>
+  <message name="IDS_AUTOFILL_AI_ORDER_DATE_ATTRIBUTE_NAME" translateable="false">
+    Date
+  </message>
+  <message name="IDS_AUTOFILL_AI_ORDER_MERCHANT_NAME_ATTRIBUTE_NAME" translateable="false">
+    Merchant name
+  </message>
+  <message name="IDS_AUTOFILL_AI_ORDER_MERCHANT_DOMAIN_ATTRIBUTE_NAME" translateable="false">
+    Merchant domain
+  </message>
+  <message name="IDS_AUTOFILL_AI_ORDER_PRODUCT_NAMES_ATTRIBUTE_NAME" translateable="false">
+    Product names
+  </message>
+  <message name="IDS_AUTOFILL_AI_ORDER_GRAND_TOTAL_ATTRIBUTE_NAME" translateable="false">
+    Grand total
+  </message>
+
   <!-- Manage suggestion -->
   <message name="IDS_AUTOFILL_AI_MANAGE_SUGGESTION_MAIN_TEXT" desc="The label for a button that opens the Autofill for AI information management interface in Brave settings. When users choose this option, they can edit, delete, and “create” new information, like a new passport or driver’s license.">
     Manage information
@@ -1160,8 +1190,12 @@
   </if>
 
 
-  <message name="IDS_AUTOFILL_AI_WALLET_UPDATE_OR_MIGRATE_FAILURE_NOTIFICATION" desc="A message that appears when an attempt to update or migrate data to Brave Wallet fails." translateable="false">
-    Couldn't save this info to your Brave Wallet. Check your connection.
+  <message name="IDS_AUTOFILL_AI_WALLET_UPDATE_OR_MIGRATE_FAILURE_NOTIFICATION" desc="A message that appears when an attempt to update or migrate data to Brave Wallet fails.">
+    Couldn't save to Brave Wallet
+  </message>
+
+  <message name="IDS_AUTOFILL_AI_WALLET_FETCH_FAILURE_NOTIFICATION" desc="A snackbar (toast) message appearing at the top of the screen. The user sees this error if they attempt to autofill information but the request fails due to network connectivity issues.">
+    Trouble filling your info. Check your connection.
   </message>
 
   <!-- Prompt strings used on Android -->
@@ -1179,6 +1213,15 @@
     <message name="IDS_AUTOFILL_AI_SAVE_OR_UPDATE_ENTITY_IN_WALLET_SOURCE_NOTICE" desc="A description that appears beneath the entity details notifying the user that their data is going to be stored in Brave Wallet." translateable="false">
       Save your info and get things done faster, like filling forms across Brave products. You can <ph name="BEGIN_LINK">&lt;link&gt;</ph>manage your info<ph name="END_LINK">&lt;/link&gt;</ph> in <ph name="IDS_AUTOFILL_GOOGLE_WALLET_TITLE">$1<ex>Brave Wallet</ex></ph> for <ph name="ACCOUNT">$2<ex>alexpark@gmail.com</ex></ph>
     </message>
+    <message name="IDS_AUTOFILL_AI_SAVE_OR_UPDATE_ENTITY_NEW_ATTRIBUTE_ACCESSIBILITY_NAME" desc="Used in entity update dialogs, as the accessible names for rows with new attributes" translateable="false" formatter_data="android_java">
+      <ph name="ATTRIBUTE_NAME">$1<ex>Passport number</ex></ph>, new
+    </message>
+    <message name="IDS_AUTOFILL_AI_SAVE_OR_UPDATE_ENTITY_UPDATED_ATTRIBUTE_ACCESSIBILITY_NAME" desc="Used in entity update dialogs, as the accessible names for rows with updated attributes" translateable="false" formatter_data="android_java">
+      <ph name="ATTRIBUTE_NAME">$1<ex>Passport number</ex></ph>, was <ph name="OLD_ATTRIBUTE_ATTRIBUTE">$2<ex>old value</ex></ph>
+    </message>
+    <message name="IDS_AUTOFILL_AI_SAVE_OR_UPDATE_ENTITY_NEW_ATTRIBUTE_WITH_BADGE" desc="Used in entity update dialogs, as the special badge to indicate newly added attributes that were not saved before." translateable="false" formatter_data="android_java">
+      <ph name="ATTRIBUTE_VALUE">$1<ex>John Doe</ex></ph>  <ph name="BEGIN_NEW">&lt;new&gt;</ph>New<ph name="END_NEW">&lt;/new&gt;</ph>
+    </message>
   </if>
 
   <!-- Entity editor strings used on Android -->
@@ -1187,9 +1230,16 @@
     <message name="IDS_AUTOFILL_AI_ENTITY_EDITOR_DELETE_LOCAL_ENTITY_DIALOG_TEXT" desc="The text that appears beneath a 'Delete object' title. We want the 'Autofill' keyword to be as prominent as possible because that word captures the value of saved information. 'On this device': helps the user understand that information is saved locally, not in the Cloud." translateable="false" formatter_data="android_java">
       Autofill won't have this info on this device to help fill out forms
     </message>
+    <message name="IDS_AUTOFILL_AI_LOCAL_ENTITY_EDITOR_SOURCE_NOTICE" desc="The footer message in the editor dialog informing the user that their data will be stored locally on their device. 'To your device': helps the user understand that information is saved locally, not in the Cloud." translateable="false" formatter_data="android_java">
+      Your info is saved only to your device. You'll have the chance to save it to Wallet the next time you fill a relevant form.
+    </message>
+    <message name="IDS_AUTOFILL_AI_WALLET_ENTITY_EDITOR_SOURCE_NOTICE" desc="The footer message in the editor dialog informing the user that their data will be stored in the Brave Wallet." translateable="false" formatter_data="android_java">
+      Your info gets saved to Brave Wallet for <ph name="ACCOUNT">$1<ex>elisa.beckett@gmail.com</ex></ph>. You may use it across Brave services to fill forms faster.
+    </message>
   </if>
 
   <!-- FFR Dialog -->
+  <!-- TODO: crbug.com/440488776 - Remove FFR strings once default availability is launched. -->
   <message name="IDS_AUTOFILL_AI_FFR_WHEN_ON_TITLE" desc="A sub title that highlights the benefits of using ‘enhanced autofill’. ‘More fields’ is referring to values in online forms. The user can fill more fields faster because ‘enhanced autofill’ supports more data types than standard autofill, including passports, driver’s licenses, and vehicles.">
     Fill more fields faster
   </message>
@@ -1202,8 +1252,20 @@
   <message name="IDS_AUTOFILL_AI_FFR_CONSIDER_LEARN_MORE" desc="Link for the enhanced autofill settings page to learn more about this feature.">
     learn more about enhanced autofill in settings
   </message>
+  <!-- TODO(crbug.com/467563819): Translate this string. -->
   <message name="IDS_SETTINGS_AUTOFILL_AI_PAGE_TITLE" desc="The title of the page in Settings that allows managing the enhanced autofill settings." formatter_data="android_java">
     Enhanced autofill
+  </message>
+  <!-- TODO(crbug.com/467563819): Translate this string. -->
+  <message name="IDS_SETTINGS_AUTOFILL_AI_WHEN_ON" desc="A title that contain a section highlighting what happens when ‘enhanced autofill’ is enabled." translateable="false" formatter_data="android_java">
+    When on
+  </message>
+  <!-- TODO(crbug.com/467563819): Translate this string. -->
+  <message name="IDS_SETTINGS_AUTOFILL_AI_THINGS_TO_CONSIDER" desc="A title that contain a section highlighting things to consider when using ‘enhanced autofill’ to improve the feature." translateable="false" formatter_data="android_java">
+    Things to consider
+  </message>
+  <message name="IDS_SETTINGS_AUTOFILL_AI_TO_CONSIDER_DATA_USAGE" desc="Bullet 1 of 2 that appears beneath the 'Things to consider' title. The point of this bullet is to convey to the user the types of data that get shared with Brave to support this feature. There are 2 data types: 1) 'the page’s URL' and 2) 'content', by which we mean the words, visuals, and layout of the pages the user visits. This notion that Brave is considering 'page content' is new. We want to lead with 'To offer suggestions' even though it might be a bit grammatically awkward, because we want to express the need / value before explaining the data that gets shared." formatter_data="android_java">
+    To offer suggestions and improve this feature, the page’s URL and content are shared with Brave
   </message>
   <if expr="_google_chrome">
     <message name="IDS_SETTINGS_AUTOFILL_AI_DESCRIPTION" desc="The description of the enhanced autofill button on chrome://settings/autofill." formatter_data="android_java">
@@ -1212,6 +1274,10 @@
     <message name="IDS_SETTINGS_AUTOFILL_AI_TOGGLE_SUB_LABEL" desc="The description of the setting. By 'understand forms better', we mean that when a user submits a form on a website, and if they're using enhanced autofill, this feature can offer to save the user's submitted info. When Brave saves that info, we save the submitted values and consider the page context.">
       Brave understands forms better and can autofill them faster for you
     </message>
+    <message name="IDS_SETTINGS_AUTOFILL_AI_WHEN_ON_CAN_FILL_DIFFICULT_FIELDS" desc="Bullet point that appears beneath appears beneath the 'When on' title when seeing the Enhanced Autofill description page. This string explains one of the advantages users will get from enabling the feature and serves as a way to incentivize the user to do so." formatter_data="android_java">
+      Brave can autofill difficult fields that standard autofill might miss
+    </message>
+
   </if>
   <if expr="not _google_chrome">
     <message name="IDS_SETTINGS_AUTOFILL_AI_DESCRIPTION" desc="The description of the enhanced autofill button on chrome://settings/autofill." formatter_data="android_java">
@@ -1219,6 +1285,9 @@
     </message>
     <message name="IDS_SETTINGS_AUTOFILL_AI_TOGGLE_SUB_LABEL" desc="The description of the setting. By 'understand forms better', we mean that when a user submits a form on a website, and if they're using enhanced autofill, this feature can offer to save the user's submitted info. When Brave saves that info, we save the submitted values and consider the page context.">
       Brave understands forms better and can autofill them faster for you
+    </message>
+    <message name="IDS_SETTINGS_AUTOFILL_AI_WHEN_ON_CAN_FILL_DIFFICULT_FIELDS" desc="Bullet point that appears beneath the 'When on' title when seeing the Enhanced Autofill description page. This string explains one of the advantages users will get from enabling the feature and serves as a way to incentivize the user to do so." formatter_data="android_java">
+      Brave can autofill difficult fields that standard autofill might miss
     </message>
   </if>
 </grit-part>

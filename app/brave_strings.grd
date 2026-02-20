@@ -778,6 +778,12 @@ Brave is unable to recover your settings.
         <message name="IDS_DEFAULT_BROWSER_MODAL_BODY_WITHOUT_SETTINGS_ILLUSTRATION" desc="Body text of the default browser modal without settings illustration.">
           Get easy access to the features you know, love, and trust by setting Brave as your default browser. Brave will be pinned to your taskbar for quick access.
         </message>
+        <message name="IDS_DEFAULT_BROWSER_BUBBLE_DIALOG_TITLE" desc="Title of the dialog prompting the user to set Brave as the default browser.">
+          Use recommended browser settings
+        </message>
+        <message name="IDS_DEFAULT_BROWSER_BUBBLE_DIALOG_BODY" desc="Main explanatory text in the default browser dialog.">
+          Get easy access to the features you know, love, and trust by setting Brave as your default browser.
+        </message>
       </if>
       <if expr="is_win or is_macosx">
         <message name="IDS_PDF_INFOBAR_TEXT" desc="Text to show in an infobar when Brave is not the default PDF viewer.">
@@ -2884,15 +2890,6 @@ Brave is unable to recover your settings.
       </message>
 
       <!-- Dice Migration strings -->
-      <message name="IDS_DICE_MIGRATION_DIALOG_TITLE" desc="The title in the Dice Migration dialog advertising the sign-in benefit.">
-        Get more when you’re signed in to Brave
-      </message>
-      <message name="IDS_DICE_MIGRATION_DIALOG_DESCRIPTION" desc="The content of the Dice Migration dialog advertising the benefits of signing in to Brave.">
-        You’ll save and use passwords and more in your Brave sync chain whenever you’re signed in to Brave. <ph name="LEARN_MORE">$1<ex>Learn more</ex></ph>
-      </message>
-      <message name="IDS_DICE_MIGRATION_DIALOG_OK_BUTTON" desc="The primary button label in the Dice Migration dialog, letting the user acknowledge signing in to Brave.">
-        Got it
-      </message>
       <message name="IDS_DICE_MIGRATION_CONFIRMATION_TOAST_MESSAGE" desc="The confirmation message shown in a toast after the user clicks on the accept button on the Dice Migration dialog.">
         You now have more features available in Brave
       </message>
@@ -2990,6 +2987,14 @@ Brave is unable to recover your settings.
 
       <message name="IDS_REPORT_UNSAFE_SITE_DIALOG_DESCRIPTION" desc="Explanatory text in dialog for reporting an unsafe site to Brave">
         Improve online safety for everyone when you report a site you think is harmful.
+      </message>
+
+      <!-- Indigo Strings -->
+      <message name="IDS_INDIGO_ENTRYPOINT_CHIP_TEXT" desc="The text on the Indigo entry point chip in the omnibox." translateable="false">
+        Indigo
+      </message>
+      <message name="IDS_INDIGO_ENTRYPOINT_CHIP_TOOLTIP_TEXT" desc="The tooltip text of the Indigo entry point chip in the omnibox when in hover state." translateable="false">
+        Indigo tooltip text
       </message>
     <message name="IDS_CHROME_SHORTCUT_NAME_BETA" desc="The Chrome shortcut name for beta channel">
           Google Chrome Beta
