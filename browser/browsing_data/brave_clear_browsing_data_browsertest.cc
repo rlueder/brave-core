@@ -139,8 +139,7 @@ class BraveClearDataOnExitTest
   }
 
   // BraveClearBrowsingData::OnExitTestingCallback implementation.
-  void BeforeClearOnExitRemoveData(content::BrowsingDataRemover* remover,
-                                   uint64_t remove_mask,
+  void BeforeClearOnExitRemoveData(uint64_t remove_mask,
                                    uint64_t origin_mask) override {
     remove_data_call_count_++;
 

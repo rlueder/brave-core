@@ -173,7 +173,7 @@ void ChromeBrowserMainParts::PostBrowserStart() {
 }
 
 void ChromeBrowserMainParts::PreShutdown() {
-  content::BraveClearBrowsingData::ClearOnExit();
+  content::BraveClearBrowsingData::ClearOnShutdown();
   ChromeBrowserMainParts_ChromiumImpl::PreShutdown();
 }
 
