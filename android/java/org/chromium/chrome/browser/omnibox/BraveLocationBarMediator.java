@@ -241,6 +241,12 @@ public class BraveLocationBarMediator extends LocationBarMediator {
         }
     }
 
+    /**
+     * Populates the omnibox with the given query and triggers autocomplete. Required for Brave's QR
+     * code scanner: (1) when a URL-like QR code is scanned, to show the URL in the omnibox for
+     * navigation; (2) as a fallback in performSearchQuery when no default search engine is
+     * configured and a search URL cannot be generated.
+     */
     public void setSearchQuery(String query) {
         if (TextUtils.isEmpty(query)) return;
 
