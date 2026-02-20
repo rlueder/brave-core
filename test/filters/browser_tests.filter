@@ -2704,6 +2704,10 @@
 # (crbug.com/333331507).
 -InstallableManagerBrowserTest.CheckFavicon
 
+# This test is flakey upstream. Remove this filter when
+# https://issues.chromium.org/issues/476255536 is resolved.
+-ProcessesApiTest.OnUpdatedWithMemoryRefreshTypes
+
 # Tests below this point have not been diagnosed or had issues created yet.
 -_/WebrtcLoggingPrivateApiStartEventLoggingTestPolicyEnabled.*
 -AdsPageLoadMetricsObserverBrowserTest.*
