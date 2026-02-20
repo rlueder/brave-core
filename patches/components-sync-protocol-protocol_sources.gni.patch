@@ -1,5 +1,5 @@
 diff --git a/components/sync/protocol/protocol_sources.gni b/components/sync/protocol/protocol_sources.gni
-index f2bda9c89283aff68f23d2ec05863062d237110a..5a6a02f1e3fce7a49d6fd3bd4581c49e6d139433 100644
+index 979c7b08d78dddcb454125b199043e87b1da36f2..81a57ae995f386a3c154d1703606787bc6e6af08 100644
 --- a/components/sync/protocol/protocol_sources.gni
 +++ b/components/sync/protocol/protocol_sources.gni
 @@ -92,3 +92,4 @@ sync_protocol_sources = [

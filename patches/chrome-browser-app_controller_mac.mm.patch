@@ -1,5 +1,5 @@
 diff --git a/chrome/browser/app_controller_mac.mm b/chrome/browser/app_controller_mac.mm
-index b7c3520adc628e244069c561fed563ffcb4b7f3f..de5d8bd6e14a0cc10f10f44f556159943a25fe24 100644
+index f8e7777e3c93795eb96a43a39f9699651e36c42c..3777f1814bff190550b258f675c348ee743baf42 100644
 --- a/chrome/browser/app_controller_mac.mm
 +++ b/chrome/browser/app_controller_mac.mm
 @@ -767,7 +767,7 @@ class AppControllerNativeThemeObserver : public ui::NativeThemeObserver {
