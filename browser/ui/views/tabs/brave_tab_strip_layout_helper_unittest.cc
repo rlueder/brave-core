@@ -26,7 +26,9 @@ namespace {
 TabWidthConstraints MakeTabConstraints(TabPinned pinned,
                                        TabOpen open = TabOpen::kOpen,
                                        TabActive active = TabActive::kInactive,
-                                       bool in_group = false) {
+                                       bool in_group = false,
+                                       int tree_height = 0,
+                                       int level = 0) {
   TabSizeInfo size_info;
   size_info.pinned_tab_width = kVerticalTabMinWidth;
   size_info.min_active_width = 56;
@@ -34,6 +36,7 @@ TabWidthConstraints MakeTabConstraints(TabPinned pinned,
   size_info.standard_width = 256;
 
   TabLayoutState state(open, pinned, active, std::nullopt);
+  state.set_nesting_info({.tree_height = tree_height, .level = level});
   TabWidthConstraints constraints(state, size_info);
   constraints.set_is_tab_in_group(in_group);
   return constraints;
@@ -324,6 +327,72 @@ TEST(BraveTabStripLayoutHelperUnitTest,
   // Tabs should be laid out left to right in the same row
   EXPECT_LT(bounds[0].right(), bounds[1].x());
   EXPECT_LT(bounds[1].right(), bounds[2].x());
+}
+
+TEST(BraveTabStripLayoutHelperUnitTest,
+     CalculateVerticalTabBounds_NestingFallbackUsesTreeHeightThreshold) {
+  std::vector<TabWidthConstraints> tabs;
+  tabs.push_back(MakeTabConstraints(
+      TabPinned::kUnpinned, TabOpen::kOpen, TabActive::kInactive,
+      /*in_group=*/false, /*tree_height=*/4, /*level=*/1));
+  tabs.push_back(MakeTabConstraints(
+      TabPinned::kUnpinned, TabOpen::kOpen, TabActive::kInactive,
+      /*in_group=*/false, /*tree_height=*/4, /*level=*/2));
+  tabs.push_back(MakeTabConstraints(
+      TabPinned::kUnpinned, TabOpen::kOpen, TabActive::kInactive,
+      /*in_group=*/false, /*tree_height=*/4, /*level=*/3));
+
+  // For this width, tree-wide even spacing is less than base offset.
+  constexpr int kAvailableWidth = 80;
+  auto [bounds, _] = CalculateVerticalTabBounds(
+      tabs, kAvailableWidth, /*should_layout_pinned_tabs_in_grid=*/false);
+
+  ASSERT_EQ(3u, bounds.size());
+
+  // With tree_height=4, effective offset per level is:
+  // (80 - 2*4 - 32) / (4 + 1) = 8.
+  EXPECT_EQ(kMarginForVerticalTabContainers + 8, bounds[0].x());
+  EXPECT_EQ(kMarginForVerticalTabContainers + 16, bounds[1].x());
+  EXPECT_EQ(kMarginForVerticalTabContainers + 24, bounds[2].x());
+}
+
+TEST(BraveTabStripLayoutHelperUnitTest,
+     CalculateVerticalTabBounds_NestingDoesNotApplyNegativeOffset) {
+  std::vector<TabWidthConstraints> tabs;
+  tabs.push_back(MakeTabConstraints(
+      TabPinned::kUnpinned, TabOpen::kOpen, TabActive::kInactive,
+      /*in_group=*/false, /*tree_height=*/4, /*level=*/3));
+
+  // This width is smaller than min width + margins and can produce
+  // negative available tree width.
+  constexpr int kAvailableWidth = 20;
+  auto [bounds, _] = CalculateVerticalTabBounds(
+      tabs, kAvailableWidth, /*should_layout_pinned_tabs_in_grid=*/false);
+
+  ASSERT_EQ(1u, bounds.size());
+  EXPECT_EQ(kMarginForVerticalTabContainers, bounds[0].x());
+  EXPECT_EQ(kAvailableWidth - 2 * kMarginForVerticalTabContainers,
+            bounds[0].width());
+}
+
+TEST(BraveTabStripLayoutHelperUnitTest,
+     CalculateVerticalTabBounds_NestingPreservesMinWidthAtHighLevel) {
+  std::vector<TabWidthConstraints> tabs;
+  tabs.push_back(MakeTabConstraints(
+      TabPinned::kUnpinned, TabOpen::kOpen, TabActive::kInactive,
+      /*in_group=*/false, /*tree_height=*/10, /*level=*/10));
+
+  // With this narrow width, available tree width becomes 4 and
+  // even_offset_per_level is 4 / (10 + 1) = 0.
+  // Even though offset_per_level is floored to 1, final offset should be
+  // clamped to preserve tab minimum width.
+  constexpr int kAvailableWidth = 44;
+  auto [bounds, _] = CalculateVerticalTabBounds(
+      tabs, kAvailableWidth, /*should_layout_pinned_tabs_in_grid=*/false);
+
+  ASSERT_EQ(1u, bounds.size());
+  EXPECT_EQ(kMarginForVerticalTabContainers + 4, bounds[0].x());
+  EXPECT_EQ(32, bounds[0].width());
 }
 
 }  // namespace tabs
