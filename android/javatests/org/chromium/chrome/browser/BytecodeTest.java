@@ -115,6 +115,7 @@ import org.chromium.chrome.browser.omnibox.suggestions.AutocompleteUIContext;
 import org.chromium.chrome.browser.omnibox.suggestions.OmniboxSuggestionsDropdownEmbedder;
 import org.chromium.chrome.browser.omnibox.suggestions.OmniboxSuggestionsDropdownScrollListener;
 import org.chromium.chrome.browser.omnibox.suggestions.SuggestionHost;
+import org.chromium.chrome.browser.omnibox.suggestions.action.OmniboxActionDelegateImpl;
 import org.chromium.chrome.browser.omnibox.suggestions.basic.BasicSuggestionProcessor.BookmarkState;
 import org.chromium.chrome.browser.open_in_app.OpenInAppMenuItemProvider;
 import org.chromium.chrome.browser.password_manager.PasswordManagerHelper;
@@ -200,7 +201,6 @@ import org.chromium.components.external_intents.ExternalNavigationDelegate;
 import org.chromium.components.feature_engagement.Tracker;
 import org.chromium.components.offline_items_collection.OfflineItem;
 import org.chromium.components.omnibox.AutocompleteMatch;
-import org.chromium.components.omnibox.action.OmniboxActionDelegate;
 import org.chromium.components.permissions.PermissionDialogDelegate;
 import org.chromium.components.search_engines.TemplateUrl;
 import org.chromium.components.signin.base.AccountInfo;
@@ -1457,7 +1457,7 @@ public class BytecodeTest {
                         TabContentManager.class,
                         TabCreatorManager.class,
                         Supplier.class,
-                        OmniboxActionDelegate.class,
+                        OmniboxActionDelegateImpl.class,
                         Supplier.class,
                         boolean.class,
                         BackPressManager.class,
@@ -1649,7 +1649,7 @@ public class BytecodeTest {
                         LocationBarDataProvider.class,
                         Callback.class,
                         BookmarkState.class,
-                        OmniboxActionDelegate.class,
+                        OmniboxActionDelegateImpl.class,
                         ActivityLifecycleDispatcher.class,
                         OmniboxSuggestionsDropdownEmbedder.class,
                         WindowAndroid.class,
@@ -1753,7 +1753,7 @@ public class BytecodeTest {
                         BookmarkState.class,
                         BooleanSupplier.class,
                         Supplier.class,
-                        OmniboxActionDelegate.class,
+                        OmniboxActionDelegateImpl.class,
                         BrowserStateBrowserControlsVisibilityDelegate.class,
                         BackPressManager.class,
                         OmniboxSuggestionsDropdownScrollListener.class,

@@ -58,7 +58,7 @@ public class BraveFeedSurfaceCoordinator extends FeedSurfaceCoordinator {
             FeedSwipeRefreshLayout swipeRefreshLayout,
             boolean overScrollDisabled,
             @Nullable ViewGroup viewportView,
-            FeedActionDelegate actionDelegate,
+            FeedSurfaceCoordinator.ActionDelegateFactory createActionDelegate,
             NonNullObservableSupplier<Integer> tabStripHeightSupplier,
             MonotonicObservableSupplier<EdgeToEdgeController> edgeToEdgeControllerSupplier,
             @Nullable ModuleRegistry moduleRegistry) {
@@ -82,7 +82,7 @@ public class BraveFeedSurfaceCoordinator extends FeedSurfaceCoordinator {
                 swipeRefreshLayout,
                 overScrollDisabled,
                 viewportView,
-                actionDelegate,
+                createActionDelegate,
                 tabStripHeightSupplier,
                 edgeToEdgeControllerSupplier,
                 moduleRegistry);
