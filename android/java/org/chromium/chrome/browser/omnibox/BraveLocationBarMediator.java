@@ -217,6 +217,10 @@ public class BraveLocationBarMediator extends LocationBarMediator {
         }
     }
 
+    // This method was removed at upstream's LocationBarMediator.
+    // Backported it here to still have ability immediately jump to search
+    // result when QR code is scanned for the regular strings, not the URLs.
+    // See BraveLocationBarQRDialogFragment.onDetectedQrCode.
     public void performSearchQuery(String query) {
         if (TextUtils.isEmpty(query)) return;
 
