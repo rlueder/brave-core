@@ -22,7 +22,7 @@ DOMStringList* Location::ancestorOrigins() const {
       DomWindow()->GetFrame()->GetSecurityContext()->GetSecurityOrigin();
 
   auto is_onion_service = [](const SecurityOrigin* origin) {
-    return origin->Host().EndsWith(".onion", kTextCaseASCIIInsensitive);
+    return origin->Host().StartsWithIgnoringAsciiCase(".onion");
   };
 
   auto is_chrome_untrusted = [](const SecurityOrigin* origin) {
